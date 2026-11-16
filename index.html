@@ -146,6 +146,25 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
   .btn.light{box-shadow:0 2px 0 #0a281b,0 4px 7px rgba(0,0,0,.18),inset 0 1px 0 rgba(230,255,238,.12)}
 }
 
+
+/* Match the reference Members screen: firm emerald 3D edge, compact sizing */
+.stat,.panel,.side,.member{
+  border:1px solid #47765b!important;
+  box-shadow:0 12px 22px rgba(0,0,0,.34),0 4px 8px rgba(0,0,0,.24),inset 0 2px 0 rgba(230,255,238,.14),inset 0 -2px 0 rgba(0,0,0,.22)!important;
+}
+.stat{background:linear-gradient(155deg,#1d402e 0%,#122b1f 58%,#0c1e15 100%)!important}
+.panel,.side{background:linear-gradient(155deg,#1b3b2c 0%,#10271d 60%,#0d2119 100%)!important}
+.member{background:linear-gradient(155deg,#1b3b2c,#10271d)!important}
+.btn{box-shadow:0 6px 0 #064c34,0 9px 15px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.34)!important}
+.btn.light{box-shadow:0 4px 0 #0a281b,0 6px 10px rgba(0,0,0,.24),inset 0 1px 0 rgba(230,255,238,.16)!important}
+@media(max-width:760px){
+ .stat,.panel,.member{padding:11px}
+ .panel{margin-bottom:10px}
+ .stat,.panel,.side,.member{box-shadow:0 12px 22px rgba(0,0,0,.34),0 4px 8px rgba(0,0,0,.24),inset 0 2px 0 rgba(230,255,238,.14),inset 0 -2px 0 rgba(0,0,0,.22)!important}
+ .btn{box-shadow:0 5px 0 #064c34,0 8px 13px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.34)!important}
+ .btn.light{box-shadow:0 3px 0 #0a281b,0 5px 9px rgba(0,0,0,.22),inset 0 1px 0 rgba(230,255,238,.16)!important}
+}
+
 </style></head>
 <body><div class="app">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1>Apna Sajhedari</h1><small>Saaf hisaab • Sabka bharosa</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span></div></header>
