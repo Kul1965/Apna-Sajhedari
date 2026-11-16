@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Apna Sajhedari",
+  "short_name": "Sajhedari",
+  "description": "Apna Sajhedari business and investment records",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#071712",
+  "theme_color": "#073d2d",
+  "icons": [
+    {
+      "src": "./icons/apna-sajhedari.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
