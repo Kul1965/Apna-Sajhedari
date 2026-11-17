@@ -251,8 +251,30 @@ function printReports(){let t=totals();printReportWindow('Member-wise Financial 
 function memberStatement(id){let m=data.members.find(x=>x.id===id);if(!m)return;let t=totals(),share=pct(m.invested,t.capital),pl=memberShare(m,t);printReportWindow('Member Statement — '+m.name,'<p><b>Name:</b> '+esc(m.name)+'<br><b>Mobile:</b> '+esc(m.phone||'Not added')+'<br><b>Investment:</b> '+money(m.invested)+'<br><b>Capital share:</b> '+share.toFixed(2)+'%<br><b>Allocated business Profit/Loss:</b> '+money(pl)+'<br><b>Investment + allocated P/L:</b> '+money(Number(m.invested)+pl)+'</p><h2>Capital Change History</h2><table><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr>'+(m.capitalHistory||[]).map(c=>'<tr><td>'+esc(c.date)+'</td><td>'+(c.direction==='add'?'Added':'Withdrawn')+'</td><td>'+money(c.amount)+'</td><td>'+esc(c.note||'')+'</td></tr>').join('')+'</table><h2>Shared Business Ledger (not individual transactions)</h2>'+ledgerReportTable(data.entries.slice().sort((a,b)=>(a.date||'').localeCompare(b.date||''))))}
 function removeEntry(id){if(confirm('Kya ye entry delete karni hai?')){data.entries=data.entries.filter(e=>e.id!==id);save()}}
 function removeMember(id){if(confirm('Member aur uska investment record delete karna hai?')){data.members=data.members.filter(m=>m.id!==id);save()}}
-function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='apna-sajhedari-backup-'+dateToday()+'.json';a.click();URL.revokeObjectURL(a.href)}
-function importData(ev){let file=ev.target.files[0];if(!file)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.members)||!Array.isArray(x.entries))throw Error();if(confirm('Current data replace ho jayega. Restore karein?')){data=x;save();alert('Backup restore ho gaya.')}}catch(e){alert('Backup file sahi nahi hai.')}};r.readAsText(file)}
+function downloadJsonBackup(snapshot,filename){let blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function exportData(){downloadJsonBackup(data,'apna-sajhedari-backup-'+dateToday()+'.json')}
+function importData(ev){
+  let file=ev.target.files&&ev.target.files[0];if(!file)return;
+  if(file.size>25*1024*1024){alert('Backup file 25 MB se badi hai.');ev.target.value='';return}
+  let reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      let restored=JSON.parse(reader.result);
+      if(!restored||!Array.isArray(restored.members)||!Array.isArray(restored.entries))throw Error('Backup format sahi nahi hai. Members aur entries records nahi mile.');
+      if(restored.assets!==undefined&&!Array.isArray(restored.assets))throw Error('Backup ka asset data sahi nahi hai.');
+      if(!confirm('STEP 1/2 — Restore se current app data replace hoga. Pehle current data ki safety copy download hogi. Aage badhein?'))return;
+      let safetyName='apna-sajhedari-SAFETY-BEFORE-RESTORE-'+dateToday()+'.json';
+      downloadJsonBackup(data,safetyName);
+      if(!confirm('STEP 2/2 — Safety backup download shuru ho gaya hai. Confirm karein ki aap isi selected file ko restore karna chahte hain?'))return;
+      if(!Array.isArray(restored.assets))restored.assets=[];
+      data=restored;save();
+      alert('Backup restore ho gaya. Purane data ki safety copy bhi download ki gayi hai: '+safetyName);
+    }catch(err){alert(err.message||'Backup file sahi nahi hai. Current data nahi badla.')}
+    finally{ev.target.value=''}
+  };
+  reader.onerror=()=>{alert('Backup file read nahi ho saki. Current data safe hai.');ev.target.value=''};
+  reader.readAsText(file)
+}
 const SUPABASE_URL = 'https://atnlyzitqolbtmsjnzlt.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu';
 let supabaseClient = null;
