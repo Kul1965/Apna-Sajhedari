@@ -207,6 +207,40 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 .member-tools{padding:12px 15px}.visiting-card{padding:15px;border:1px solid #527b60;background:linear-gradient(145deg,#244a36 0%,#132e21 65%,#0c2117 100%);border-radius:16px;box-shadow:0 10px 20px #0004,inset 0 1px 0 #ffffff20}.visiting-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.member-photo{width:58px;height:58px;object-fit:cover;border-radius:15px;border:1px solid #d8b35e;box-shadow:0 5px 12px #0005}.member-avatar{display:grid;place-items:center;background:linear-gradient(145deg,#d7ad52,#805d24);color:#10271d;font-size:23px;font-weight:900}.member-identity{min-width:0}.member-identity b{display:block;font-size:16px;overflow-wrap:anywhere}.member-identity .muted{font-size:11px;margin-top:3px}.member-share-chip{flex-shrink:0;border:1px solid #d2ad5b;color:#f3d68f;background:#47391d;border-radius:99px;padding:5px 8px;font-size:10px;font-weight:800}.visiting-card .memberstats{margin-top:13px}.visiting-card .member-actions{border-top:1px solid #ffffff17;padding-top:11px}.visiting-card .member-actions .btn{font-size:11px;padding:7px 9px}@media(max-width:560px){.member-tools{padding:10px}.visiting-card{padding:12px}.member-photo{width:52px;height:52px}.member-identity b{font-size:15px}.member-share-chip{font-size:9px;padding:4px 6px}.visiting-card .member-actions{gap:6px}.visiting-card .member-actions .btn{padding:7px 8px;font-size:10px}}
 
 .ledger-filters{padding:14px}.ledger-filters .formgrid{gap:10px}.ledger-filters .field.full{grid-column:1/-1}@media(max-width:560px){#ledger .heading{align-items:flex-start;flex-wrap:wrap}#ledger .heading .actions{margin:0;width:100%;justify-content:flex-start}#ledger .heading .actions .btn{flex:1}.ledger-filters{padding:11px}#ledger .stats .stat strong{font-size:17px}}
+
+/* Staff screen: tidy mobile staff cards and aligned 3D actions */
+#staff .heading{align-items:center;gap:14px}
+#staff .heading>div{min-width:0}
+#staff .heading>.btn{flex:0 0 auto;white-space:nowrap}
+#staff .panelhead{align-items:center}
+#staff .tablewrap{width:100%;max-width:100%}
+#staff .member-actions{display:flex;align-items:center;justify-content:flex-start;gap:9px;flex-wrap:wrap;margin:0}
+#staff .member-actions .btn{min-height:36px}
+#staff .btn{border-radius:12px;box-shadow:0 5px 0 #064c34,0 9px 14px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.38)!important}
+#staff .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #064c34,0 3px 7px rgba(0,0,0,.25),inset 0 2px 4px rgba(0,35,20,.3)!important}
+@media(max-width:760px){
+ #staff .heading{align-items:center}
+ #staff .heading h2{font-size:21px}
+ #staff .sub{font-size:12px}
+ #staff .heading>.btn{padding:10px 13px;font-size:13px}
+ #staff #staffRows{display:block}
+ #staff #staffRows tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 14px;padding:12px;margin:10px 0 14px;border:1px solid #47765b;border-radius:13px;background:linear-gradient(145deg,#1b3b2c,#10271d);box-shadow:0 8px 16px rgba(0,0,0,.28),inset 0 1px 0 rgba(230,255,238,.12)}
+ #staff #staffRows td{display:block;min-width:0;white-space:normal;overflow-wrap:anywhere;padding:7px 3px;border-bottom:1px solid #31513f;font-size:12px}
+ #staff #staffRows td:nth-child(1){grid-column:1/-1;font-size:14px;padding-top:3px}
+ #staff #staffRows td:nth-child(1) b{font-size:16px}
+ #staff #staffRows td:nth-child(1) small{font-size:11px}
+ #staff #staffRows td:nth-child(2):before{content:"WORK";display:block;color:#9ab3a5;font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:3px}
+ #staff #staffRows td:nth-child(3):before{content:"PAY TYPE";display:block;color:#9ab3a5;font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:3px}
+ #staff #staffRows td:nth-child(4):before{content:"RATE / SALARY";display:block;color:#9ab3a5;font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:3px}
+ #staff #staffRows td:nth-child(5):before{content:"DUTY";display:block;color:#9ab3a5;font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:5px}
+ #staff #staffRows td:nth-child(6){grid-column:1/-1;border:0;padding:12px 0 2px}
+ #staff #staffRows td:nth-child(6) .member-actions{gap:8px}
+ #staff #staffRows td:nth-child(6) .btn{flex:1 1 calc(50% - 8px);min-width:0;padding:9px 7px;font-size:11px}
+ #staff #staffRows td.empty{grid-column:1/-1;text-align:center;padding:20px 8px}
+ #staff .panel{overflow:hidden}
+ #staff .tablewrap:has(#staffWorkRows),#staff .tablewrap:has(#staffPaymentRows){overflow-x:auto;-webkit-overflow-scrolling:touch}
+ #staff #staffWorkRows,#staff #staffPaymentRows{min-width:620px}
+}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button></div></header>
