@@ -11,6 +11,12 @@
   "theme_color": "#073d2d",
   "icons": [
     {
+      "src": "./icons/apna-sajhedari-apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "./icons/apna-sajhedari.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
