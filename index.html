@@ -342,7 +342,35 @@ function toggleWorkEntryFields(){const sel=document.getElementById('workWorker')
 function saveWorkEntry(ev){ev.preventDefault();ensureStaffData();const f=new FormData(ev.target),w=data.staffWorkers.find(x=>x.id===f.get('workerId')),date=f.get('date'),note=String(f.get('note')||'').trim();if(!w||!date){alert('Worker aur date check karein.');return}if(w.payType==='monthly'){const days=Number(f.get('days')),rate=w.dailyRateMode==='custom'?Number(w.customDailyRate):Number(w.monthlySalary)/30;if(days<=0||days>31||rate<=0){alert('Kaam ke din aur daily rate sahi dalein.');return}if(data.staffWork.some(x=>x.workerId===w.id&&x.date===date)){alert('Is worker ki is date par attendance pehle se hai. Edit/delete duplicate se bachata hai.');return}data.staffWork.push({id:crypto.randomUUID(),workerId:w.id,workerName:w.name,date,payType:'monthly',days,rate:Number(rate.toFixed(2)),amount:Number((days*rate).toFixed(2)),note})}else{const from=new Date(f.get('from')),to=new Date(f.get('to')),rate=Number(f.get('rate'));if(!Number.isFinite(from.getTime())||!Number.isFinite(to.getTime())||to<=from||rate<=0){alert('Duty time aur hourly rate check karein. End time start se baad hona chahiye.');return}const hours=(to-from)/3600000;data.staffWork.push({id:crypto.randomUUID(),workerId:w.id,workerName:w.name,date,payType:'hourly',from:f.get('from'),to:f.get('to'),hours:Number(hours.toFixed(2)),rate,amount:Number((hours*rate).toFixed(2)),note})}closeModal();save();showPage('staff')}
 function openStaffPayment(){ensureStaffData();if(!data.staffWorkers.length){alert('Pehle staff add karein.');return}openModal('Staff Salary / Advance Payment','<form onsubmit="saveStaffPayment(event)"><div class="formgrid"><div class="field full"><label>Worker *</label><select name="workerId" required>'+data.staffWorkers.map(w=>'<option value="'+w.id+'">'+esc(w.name)+' — '+(w.payType==='monthly'?'Monthly':'Hourly')+'</option>').join('')+'</select></div><div class="field"><label>Salary month / Advance month *</label><input name="month" type="month" value="'+dateToday().slice(0,7)+'" required></div><div class="field"><label>Payment date *</label><input name="date" type="date" value="'+dateToday()+'" required></div><div class="field"><label>Payment type *</label><select name="kind"><option value="Salary">Salary / Wage</option><option value="Advance">Advance</option></select></div><div class="field"><label>Amount paid (₹) *</label><input name="amount" type="number" min=".01" step=".01" required></div><div class="field full"><label>Note</label><input name="note" maxlength="120" placeholder="Cash / bank / details"></div></div><p class="muted">Save karte hi Labour expense Ledger mein bhi add hoga. Advance bhi selected month ke hisaab se due se minus hoga.</p><div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button class="btn">Save Payment</button></div></form>')}
 function saveStaffPayment(ev){ev.preventDefault();ensureStaffData();const f=new FormData(ev.target),w=data.staffWorkers.find(x=>x.id===f.get('workerId')),amount=Number(f.get('amount')),month=String(f.get('month')||''),date=String(f.get('date')||''),kind=String(f.get('kind')||'Salary');if(!w||amount<=0||!month||!date){alert('Worker, month, date aur amount check karein.');return}const id=crypto.randomUUID(),ledgerId=crypto.randomUUID(),note=(kind==='Advance'?'Staff advance: ':'Staff salary payment: ')+w.name+(String(f.get('note')||'').trim()?' — '+String(f.get('note')).trim():'');data.staffPayments.push({id,ledgerId,workerId:w.id,workerName:w.name,month,date,amount,kind,note:String(f.get('note')||'').trim()});data.entries.push({id:ledgerId,type:'expense',amount,date,category:'Labour',note,staffPaymentId:id});closeModal();save();showPage('staff')}
-function toggleStaffDuty(id){ensureStaffData();const w=data.staffWorkers.find(x=>x.id===id);if(!w)return;w.dutyActive=w.dutyActive===false;save();showPage('staff')}
+function toggleStaffDuty(id){
+ ensureStaffData();
+ const w=data.staffWorkers.find(x=>x.id===id);
+ if(!w)return;
+ const now=new Date(),stamp=now.toISOString(),date=dateToday();
+ if(w.dutyActive===false){
+   w.dutyActive=true;
+   w.dutyStartedAt=stamp;
+   w.dutyStartedDate=date;
+   alert(w.name+' ki duty ON ho gayi. Aane ka time record ho gaya.');
+ }else{
+   if(!w.dutyStartedAt){w.dutyActive=false;save();showPage('staff');return}
+   const start=new Date(w.dutyStartedAt),end=now;
+   if(!Number.isFinite(start.getTime())||end<=start){alert('Duty start time sahi nahi mila.');return}
+   const startDate=w.dutyStartedDate||date;
+   const rate=w.payType==='monthly'?(w.dailyRateMode==='custom'?Number(w.customDailyRate):Number(w.monthlySalary||0)/30):Number(w.hourlyRate||0);
+   if(w.payType==='hourly'){
+     const hours=(end-start)/3600000;
+     data.staffWork.push({id:crypto.randomUUID(),workerId:w.id,workerName:w.name,date:startDate,payType:'hourly',from:w.dutyStartedAt.slice(0,16),to:stamp.slice(0,16),hours:Number(hours.toFixed(2)),rate,amount:Number((hours*rate).toFixed(2)),note:'Duty ON/OFF se automatic record'});
+   }else if(!data.staffWork.some(x=>x.workerId===w.id&&x.date===startDate)){
+     data.staffWork.push({id:crypto.randomUUID(),workerId:w.id,workerName:w.name,date:startDate,payType:'monthly',days:1,rate:Number(rate.toFixed(2)),amount:Number(rate.toFixed(2)),note:'Duty ON/OFF attendance'});
+   }
+   w.dutyActive=false;
+   w.dutyStartedAt=null;
+   w.dutyStartedDate=null;
+   alert(w.name+' ki duty OFF ho gayi. Duty ka time/attendance save ho gaya.');
+ }
+ save();showPage('staff')
+}
 function sendWhatsAppText(message,phone){
   const lines=String(message||'').split(/\r?\n/).map(x=>x.trimEnd());
   const title=(lines.shift()||'Apna Sajhedari Update').trim();
