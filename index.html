@@ -506,8 +506,19 @@ window.addEventListener('appinstalled', () => {
   if (installAppBtn) installAppBtn.hidden = true;
 });
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Offline app setup:', err));
+  let appRefreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (appRefreshing) return;
+    appRefreshing = true;
+    window.location.reload();
+  });
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      await registration.update();
+    } catch (err) {
+      console.warn('App update check:', err);
+    }
   });
 }
 </script></body></html>
