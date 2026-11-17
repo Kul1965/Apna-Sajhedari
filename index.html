@@ -280,7 +280,33 @@ function openAdminLogin() {
     '<div class="field"><label>Email *</label><input name="email" type="email" autocomplete="username" required placeholder="Admin email"></div>'+
     '<div class="field"><label>Password *</label><input name="password" type="password" autocomplete="current-password" required placeholder="Supabase Auth password"></div>'+
     '<div id="authMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+    '<div style="margin:8px 0"><button type="button" class="btn light small" onclick="openForgotPasswordForm()">Forgot Password?</button></div>'+
     '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button id="authSubmitBtn" class="btn">Secure Login</button></div></form>');
+}
+function openForgotPasswordForm() {
+  openModal('Admin Password Reset',
+    '<p class="muted">Apna Supabase Admin email dalein. Reset link isi app par wapas aayega.</p>'+
+    '<form onsubmit="sendAdminPasswordReset(event)">'+
+    '<div class="field"><label>Admin Email *</label><input name="email" type="email" autocomplete="username" required placeholder="Admin email"></div>'+
+    '<div id="resetEmailMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+    '<div class="actions"><button type="button" class="btn light" onclick="openAdminLogin()">Back to Login</button><button id="resetEmailBtn" class="btn">Send Reset Link</button></div></form>');
+}
+async function sendAdminPasswordReset(ev) {
+  ev.preventDefault();
+  const form=ev.target, fd=new FormData(form), msg=document.getElementById('resetEmailMessage'), btn=document.getElementById('resetEmailBtn');
+  btn.disabled=true; btn.textContent='Sending...';
+  try {
+    const email=String(fd.get('email')||'').trim();
+    const {error}=await getSupabaseClient().auth.resetPasswordForEmail(email,{
+      redirectTo:'https://kul1965.github.io/Apna-Sajhedari/'
+    });
+    if(error) throw error;
+    msg.textContent='Reset email request bhej di gayi. Inbox aur Spam check karein. Link expire ho to naya link mangayein.';
+    btn.disabled=false; btn.textContent='Send Again';
+  } catch(err) {
+    msg.textContent=err.message||'Reset email nahi bhej paye. Thodi der baad try karein.';
+    btn.disabled=false; btn.textContent='Try Again';
+  }
 }
 async function supabaseAdminSignIn(ev) {
   ev.preventDefault();
@@ -347,17 +373,29 @@ async function saveRecoveredPassword(ev) {
 }
 async function restoreSupabaseAdminSession() {
   try {
-    // Capture recovery marker before Supabase processes and cleans the URL hash.
-    const recoveryRequested = window.location.hash.includes('type=recovery') ||
-      new URLSearchParams(window.location.search).has('code');
+    // Read recovery/error markers before Supabase consumes the URL.
+    const hashParams=new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const queryParams=new URLSearchParams(window.location.search);
+    const recoveryRequested = hashParams.get('type')==='recovery' ||
+      queryParams.has('code') || hashParams.has('access_token');
+    const recoveryError = hashParams.get('error_description') || queryParams.get('error_description');
+    if(recoveryError) {
+      openModal('Password Reset Link Error',
+        '<p class="muted">'+esc(decodeURIComponent(String(recoveryError).replace(/\+/g,' ')))+'</p>'+
+        '<p class="muted">Link expire ho sakta hai. Login screen se Forgot Password? dabakar naya link mangayein. Email rate limit aaye to cooldown khatam hone dein.</p>'+
+        '<div class="actions"><button class="btn" onclick="openAdminLogin()">Back to Login</button></div>');
+      return;
+    }
     const client=getSupabaseClient();
+    let recoveryFormShown=false;
+    const showRecoveryOnce=()=>{ if(!recoveryFormShown){recoveryFormShown=true;setTimeout(()=>showRecoveryPasswordForm(),0);} };
     client.auth.onAuthStateChange((event,session) => {
-      if(event==='PASSWORD_RECOVERY' && session) setTimeout(()=>showRecoveryPasswordForm(),0);
+      if(event==='PASSWORD_RECOVERY' && session) showRecoveryOnce();
     });
     const {data,error}=await client.auth.getSession();
     if(error) throw error;
     if(data.session && recoveryRequested) {
-      showRecoveryPasswordForm();
+      showRecoveryOnce();
       return;
     }
     if(error||!data.session) return;
