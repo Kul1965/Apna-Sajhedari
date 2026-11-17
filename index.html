@@ -317,10 +317,46 @@ async function supabaseAdminSignOut() {
   if(authBtn) authBtn.textContent='Admin Login';
   closeModal();
 }
+function showRecoveryPasswordForm() {
+  openModal('Naya Password Set Karein',
+    '<p class="muted">Aapka Supabase recovery link verify ho gaya. Apna naya password set karein.</p>'+
+    '<form onsubmit="saveRecoveredPassword(event)">'+
+    '<div class="field"><label>Naya Password *</label><input name="newPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Kam se kam 8 characters"></div>'+
+    '<div class="field"><label>Password dobara likhein *</label><input name="confirmPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Confirm new password"></div>'+
+    '<div id="recoveryMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+    '<div class="actions"><button type="submit" id="recoverySaveBtn" class="btn">Update Password</button></div></form>');
+}
+async function saveRecoveredPassword(ev) {
+  ev.preventDefault();
+  const form=ev.target, fd=new FormData(form), msg=document.getElementById('recoveryMessage'), btn=document.getElementById('recoverySaveBtn');
+  const password=String(fd.get('newPassword')||''), confirm=String(fd.get('confirmPassword')||'');
+  if(password.length<8) { msg.textContent='Password kam se kam 8 characters ka rakhein.'; return; }
+  if(password!==confirm) { msg.textContent='Dono password ek jaise nahi hain.'; return; }
+  btn.disabled=true; btn.textContent='Updating...'; msg.textContent='Supabase mein password update ho raha hai...';
+  try {
+    const {data,error}=await getSupabaseClient().auth.updateUser({password});
+    if(error) throw error;
+    msg.textContent='Password successfully update ho gaya. Ab Admin Login karein.';
+    await getSupabaseClient().auth.signOut();
+    signedInAdmin=null;
+    setTimeout(()=>{ openAdminLogin(); },900);
+  } catch(err) {
+    msg.textContent=err.message||'Password update nahi ho saka.';
+    btn.disabled=false; btn.textContent='Update Password';
+  }
+}
 async function restoreSupabaseAdminSession() {
   try {
     const client=getSupabaseClient();
+    client.auth.onAuthStateChange((event,session) => {
+      if(event==='PASSWORD_RECOVERY' && session) showRecoveryPasswordForm();
+    });
     const {data,error}=await client.auth.getSession();
+    if(error) throw error;
+    if(data.session && (window.location.hash.includes('type=recovery') || new URLSearchParams(window.location.search).has('code'))) {
+      showRecoveryPasswordForm();
+      return;
+    }
     if(error||!data.session) return;
     const {data:profile,error:profileError}=await client.from('user_profiles')
       .select('user_id,role,display_name').eq('user_id',data.session.user.id).maybeSingle();
