@@ -184,6 +184,25 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
   #modal .dialog .actions{position:sticky;bottom:0;z-index:5;padding:10px 0 calc(10px + env(safe-area-inset-bottom));margin:12px -2px 0;background:linear-gradient(180deg,rgba(16,37,29,.94),#10251d 28%);border-top:1px solid #47765b}
   #modal .dialog .actions .btn{min-height:44px}
 }
+
+/* Mobile navigation: keep all six destinations reachable without squeezing labels */
+@media(max-width:760px){
+  .bottomnav{
+    display:flex!important;
+    justify-content:flex-start!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .bottomnav::-webkit-scrollbar{display:none}
+  .bottomnav .nav{
+    flex:0 0 auto!important;
+    min-width:58px;
+    padding-left:9px!important;
+    padding-right:9px!important;
+  }
+}
 </style></head>
 <body><div class="app">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Saaf hisaab • Sabka bharosa</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button></div></header>
