@@ -347,13 +347,16 @@ async function saveRecoveredPassword(ev) {
 }
 async function restoreSupabaseAdminSession() {
   try {
+    // Capture recovery marker before Supabase processes and cleans the URL hash.
+    const recoveryRequested = window.location.hash.includes('type=recovery') ||
+      new URLSearchParams(window.location.search).has('code');
     const client=getSupabaseClient();
     client.auth.onAuthStateChange((event,session) => {
-      if(event==='PASSWORD_RECOVERY' && session) showRecoveryPasswordForm();
+      if(event==='PASSWORD_RECOVERY' && session) setTimeout(()=>showRecoveryPasswordForm(),0);
     });
     const {data,error}=await client.auth.getSession();
     if(error) throw error;
-    if(data.session && (window.location.hash.includes('type=recovery') || new URLSearchParams(window.location.search).has('code'))) {
+    if(data.session && recoveryRequested) {
       showRecoveryPasswordForm();
       return;
     }
