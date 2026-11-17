@@ -254,7 +254,7 @@ function totals(){const capital=data.members.reduce((s,m)=>s+Number(m.invested||
 function pct(n,d){return d? n/d*100:0}
 function shareUnitsTotal(){return data.members.reduce((s,m)=>s+Number(m.shareUnits||0),0)}
 function sharePrice(){let u=shareUnitsTotal(),v=totals().businessValue;return data.shareSystem&&u>0?Math.max(0,v)/u:0}
-function memberOwnershipPct(m,t){return data.shareSystem?(shareUnitsTotal()?Number(m.shareUnits||0)/shareUnitsTotal()*100:0):memberOwnershipPct(m,t)}
+function memberOwnershipPct(m,t){return data.shareSystem?(shareUnitsTotal()?Number(m.shareUnits||0)/shareUnitsTotal()*100:0):pct(m.invested,t.capital)}
 function memberCurrentValue(m){return data.shareSystem?Number(m.shareUnits||0)*sharePrice():Number(m.invested||0)}
 function memberShare(m,t){return data.shareSystem?memberCurrentValue(m)-Number(m.invested||0):(t.capital?Number(m.invested||0)/t.capital*t.profit:0)}
 function initializeShareSystem(){if(data.shareSystem)return;let t=totals(),price=10;if(!data.members.length||t.businessValue<=0||t.capital<=0){alert('Members, positive business value aur capital record zaroori hai.');return}let units=t.businessValue/price;if(!confirm('Opening Share Setup\\nBusiness net value: '+money(t.businessValue)+'\\nOpening share price: ₹10\\nTotal shares: '+units.toFixed(4)+'\\nExisting members ko unke investment ratio se shares milenge. Activate karein?'))return;data.shareSystem={enabled:true,startedAt:dateToday(),openingValue:t.businessValue,openingPrice:price,openingUnits:units};data.members.forEach(m=>m.shareUnits=units*Number(m.invested||0)/t.capital);data.shareTransactions=[{id:crypto.randomUUID(),type:'Opening allocation',date:dateToday(),value:t.businessValue,price,units}];save();showPage('shares')}
