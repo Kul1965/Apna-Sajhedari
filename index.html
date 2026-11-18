@@ -673,7 +673,7 @@ async function supabaseAdminSignIn(ev) {
     }
     signedInAdmin={id:profile.user_id,role:profile.role,display_name:profile.display_name||'Apna Sajhedari Admin'};
     const authBtn=document.getElementById('adminAuthBtn');
-    if(authBtn) authBtn.textContent='Admin ✓';
+    if(authBtn) authBtn.textContent='Admin · '+(signedInAdmin.display_name||'Admin')+' ✓';
     closeModal();
     alert('Supabase Admin Login successful. Abhi cloud data sync alag se test aur enable karna baaki hai.');
   } catch(err) {
@@ -750,7 +750,7 @@ async function restoreSupabaseAdminSession() {
     if(!profileError && profile && profile.role==='admin') {
       signedInAdmin={id:profile.user_id,role:profile.role,display_name:profile.display_name||'Apna Sajhedari Admin'};
       const authBtn=document.getElementById('adminAuthBtn');
-      if(authBtn) authBtn.textContent='Admin ✓';
+      if(authBtn) authBtn.textContent='Admin · '+(signedInAdmin.display_name||'Admin')+' ✓';
     }
   } catch(err) { console.warn('Supabase session check:',err); }
 }
