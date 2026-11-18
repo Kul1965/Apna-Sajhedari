@@ -386,7 +386,7 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 }
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
-<header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
+<header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberOtpLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
 <div class="wrap"><div class="notice" id="cloudSyncNotice">🟡 <b>Cloud setup baaki:</b> Aapka purana hisaab is device par surakshit hai. Supabase Cloud Sync setup poora hone tak isi device par kaam karein.</div>
 <div class="layout"><aside class="side" id="sideNav"></aside><main class="main">
 <section id="dashboard" class="page"><div class="heading"><div><h2>Namaste, Admin 👋</h2><div class="sub">Aapke saajhe business ka poora hisaab</div></div><div class="actions"><button class="btn light small" onclick="printDashboard()">📄 Dashboard PDF</button><button class="btn light small" onclick="showPage('assets')">🏗️ Investment Details</button><button class="btn" onclick="openEntry()">＋ Kamai / Kharcha likhein</button></div></div>
@@ -718,6 +718,60 @@ async function verifyAdminRecoveryOtp(ev){
 async function resendAdminRecoveryOtp(email){
   try{const {error}=await getSupabaseClient().auth.resetPasswordForEmail(email,{redirectTo:'https://kul1965.github.io/Apna-Sajhedari/'});if(error)throw error;alert('Naya OTP request bhej diya. Inbox aur Spam check karein.');}
   catch(err){alert(err.message||'OTP dobara nahi bhej paye.')}
+}
+let memberOtpPhone='';
+function openMemberOtpLogin(){
+ openModal('Member Login — Mobile OTP',
+  '<p class="muted">Apne record mein darj mobile number likhein. OTP verify hone par hi member account request banegi.</p>'+
+  '<form onsubmit="sendMemberOtp(event)">'+
+  '<div class="field"><label>Registered Mobile Number *</label><input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+91XXXXXXXXXX"></div>'+
+  '<div id="memberOtpMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+  '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button id="memberOtpSendBtn" class="btn">Send OTP</button></div></form>');
+}
+async function sendMemberOtp(ev){
+ ev.preventDefault();
+ const form=ev.target,btn=document.getElementById('memberOtpSendBtn'),msg=document.getElementById('memberOtpMessage');
+ const phone=String(new FormData(form).get('phone')||'').trim();
+ if(!/^\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath number likhein, jaise +91XXXXXXXXXX.';return}
+ btn.disabled=true;btn.textContent='Sending...';msg.textContent='Supabase se OTP bheja ja raha hai...';
+ try{
+  const {error}=await getSupabaseClient().auth.signInWithOtp({phone,options:{shouldCreateUser:true}});
+  if(error)throw error;
+  memberOtpPhone=phone;
+  openModal('OTP Verify Karein',
+   '<p class="muted">OTP is number par bheja gaya: <b>'+esc(phone)+'</b></p>'+
+   '<form onsubmit="verifyMemberOtp(event)">'+
+   '<div class="field"><label>6-digit OTP *</label><input name="token" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required placeholder="123456"></div>'+
+   '<div id="memberOtpVerifyMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+   '<div class="actions"><button type="button" class="btn light" onclick="openMemberOtpLogin()">Back</button><button id="memberOtpVerifyBtn" class="btn">Verify OTP</button></div></form>');
+ }catch(err){msg.textContent=err.message||'OTP nahi bheja ja saka.';btn.disabled=false;btn.textContent='Send OTP'}
+}
+async function verifyMemberOtp(ev){
+ ev.preventDefault();
+ const form=ev.target,btn=document.getElementById('memberOtpVerifyBtn'),msg=document.getElementById('memberOtpVerifyMessage');
+ const token=String(new FormData(form).get('token')||'').trim();
+ btn.disabled=true;btn.textContent='Verifying...';msg.textContent='OTP verify ho raha hai...';
+ try{
+  const {data,error}=await getSupabaseClient().auth.verifyOtp({phone:memberOtpPhone,token,type:'sms'});
+  if(error)throw error;
+  const user=data.user;
+  if(!user)throw new Error('OTP verify hua, lekin Auth user nahi mila.');
+  const {data:request,error:requestError}=await getSupabaseClient().rpc('request_my_member_access');
+  if(requestError)throw requestError;
+  const result=Array.isArray(request)?request[0]:request;
+  if(!result)throw new Error('Member request ka result nahi mila.');
+  if(result.request_status==='approved'){
+    openModal('Member Verification Successful',
+      '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile aur Admin approval dono verified hain.</p>'+
+      '<p class="notice">Member account ka secure statement/login agle setup step mein activate hoga. Abhi Admin ka data nahi khulega.</p>'+
+      '<div class="actions"><button class="btn" onclick="closeModal()">Close</button></div>');
+  }else{
+    openModal('Admin Approval Pending',
+      '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile OTP se verify ho gaya hai.</p>'+
+      '<p class="notice">Aapka request Admin ko bhej diya gaya hai. Admin ke approve karne tak account band rahega. Aap baad mein isi number se dobara OTP verify kar sakte hain.</p>'+
+      '<div class="actions"><button class="btn" onclick="closeModal()">Theek hai</button></div>');
+  }
+ }catch(err){msg.textContent=err.message||'OTP verification nahi hua.';btn.disabled=false;btn.textContent='Verify OTP'}
 }
 async function loadMemberAccessRequests(){
  const list=document.getElementById('memberApprovalList'),status=document.getElementById('memberApprovalStatus');
