@@ -434,6 +434,30 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
     text-align:center!important;justify-content:center!important;
   }
 }
+
+/* Make dashboard quick actions look like distinct premium buttons */
+@media(max-width:560px){
+  #dashboard > .heading > .actions .btn{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    border:1px solid rgba(177,224,196,.48)!important;
+    border-radius:12px!important;
+    background:linear-gradient(145deg,#20543d 0%,#103526 100%)!important;
+    color:#a4edc2!important;
+    box-shadow:0 3px 0 rgba(3,20,13,.75),inset 0 1px 0 rgba(255,255,255,.14),0 5px 12px rgba(0,0,0,.22)!important;
+    font-weight:800!important;
+    text-shadow:0 1px 1px rgba(0,0,0,.3);
+  }
+  #dashboard > .heading > .actions .btn:active{
+    transform:translateY(2px)!important;
+    box-shadow:0 1px 0 rgba(3,20,13,.75),inset 0 1px 3px rgba(0,0,0,.25)!important;
+  }
+  #dashboard > .heading > .actions .btn.light{
+    background:linear-gradient(145deg,#20543d 0%,#103526 100%)!important;
+    color:#a4edc2!important;
+  }
+}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
