@@ -772,6 +772,7 @@ async function supabaseAdminSignIn(ev) {
     }
     signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||authData.user.user_metadata?.full_name||authData.user.email?.split('@')[0]||'Admin').trim()};
     updateAdminAuthCard();
+    render();
     closeModal();
     alert('Supabase Admin Login successful. Ab Cloud Sync check ho raha hai.'); prepareCloudSync();
   } catch(err) {
@@ -785,6 +786,7 @@ async function supabaseAdminSignOut() {
   signedInAdmin=null;
   const authBtn=document.getElementById('adminAuthBtn');
   updateAdminAuthCard();
+  render();
   closeModal();
 }
 function showRecoveryPasswordForm() {
@@ -848,6 +850,7 @@ async function restoreSupabaseAdminSession() {
     if(!profileError && profile && profile.role==='admin') {
       signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||data.session.user.user_metadata?.full_name||data.session.user.email?.split('@')[0]||'Admin').trim()};
       updateAdminAuthCard();
+      render();
       prepareCloudSync();
     }
   } catch(err) { console.warn('Supabase session check:',err); }
