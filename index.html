@@ -458,6 +458,13 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
     color:#a4edc2!important;
   }
 }
+
+/* Keep the expanded bottom navigation reachable on small screens */
+@media(max-width:560px){
+ .bottomnav{justify-content:flex-start!important;overflow-x:auto!important;overflow-y:hidden!important;gap:4px!important;scrollbar-width:none}
+ .bottomnav::-webkit-scrollbar{display:none}
+ .bottomnav .nav{flex:0 0 auto!important;min-width:72px!important}
+}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
