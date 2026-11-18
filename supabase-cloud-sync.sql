@@ -46,3 +46,7 @@ with check (
     where p.user_id = auth.uid() and p.role = 'admin'
   )
 );
+
+-- Allow signed-in users to reach the table; row-level security above
+-- still restricts access to the signed-in admin's own row.
+grant select, insert, update on table public.app_state to authenticated;
