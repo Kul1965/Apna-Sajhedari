@@ -889,10 +889,10 @@ function showMemberStatementPortal(s,messages){
  '<div class="panel" style="margin-top:16px"><div class="muted">Member Code</div><b>'+esc(s.member_code||'—')+'</b><div class="muted" style="margin-top:8px">Mobile: '+esc(s.mobile||'—')+'</div><div class="muted">Address: '+esc(s.address||'—')+'</div></div>'+
  '<div class="stats" style="margin-top:14px;grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><div class="label">Laga hua paisa</div><strong>'+money(s.invested)+'</strong></div><div class="stat"><div class="label">Aapka hissa</div><strong>'+Number(s.ownership_percent||0).toFixed(2)+'%</strong></div><div class="stat"><div class="label">Faida / Nuksan</div><strong>'+money(s.profit_loss)+'</strong></div><div class="stat"><div class="label">Aaj ki kul value</div><strong>'+money(s.current_value)+'</strong></div></div>'+
  '<div class="panel" style="margin-top:14px"><h3>Capital Change History</h3>'+(history.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody>'+history.map(x=>'<tr><td>'+esc(x.date||'—')+'</td><td>'+(x.direction==='add'?'Jama':'Nikasi')+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.note||'')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="muted">Abhi koi capital change record nahi hai.</div>')+'</div>'+
- '<div class="panel" style="margin-top:14px"><div class="panelhead"><h3>📬 Suchana aur Messages</h3><span id="memberUnreadCount" class="pill"></span><button class="btn light small" onclick="refreshMemberInbox()">↻ Refresh</button></div><div id="memberInboxList"></div></div>'+
+ '<div class="panel" style="margin-top:14px"><div class="panelhead"><h3>📬 Suchana aur Messages</h3></div><div id="memberInboxList"></div></div>'+
  '<p class="muted" style="font-size:12px;margin-top:14px">Yeh sirf aapka personal account hai. Shared business ledger aur doosre members ka data yahan nahi dikhaya jata.</p></div></div>';
  portal.style.display='block';
- refreshMemberInbox();
+ renderMemberInbox(messages||[]);
 }
 async function closeMemberStatementPortal(){try{await getSupabaseClient().auth.signOut()}catch(e){}const portal=document.getElementById('memberStatementPortal');if(portal)portal.remove();const app=document.getElementById('appRoot');if(app)app.style.display=''}
 async function memberPasswordSignIn(ev){
@@ -912,6 +912,7 @@ async function memberPasswordSignIn(ev){
   if(statementError)throw statementError;
   if(!statement)throw new Error('Aapka personal statement abhi nahi mila.');
   const messages=await loadMemberInbox();
+  await getSupabaseClient().auth.signOut();
   closeModal();
   showMemberStatementPortal(statement,messages);
  }catch(err){msg.textContent=err.message||'Login nahi hua.';btn.disabled=false;btn.textContent='Login'}
@@ -975,14 +976,9 @@ async function loadMemberInbox(){
  const {data,error}=await getSupabaseClient().rpc('get_my_member_messages');
  if(error)throw error;return data||[];
 }
-async function markMemberMessageRead(id){
- try{const {error}=await getSupabaseClient().rpc('mark_my_member_message_read',{p_message_id:id});if(error)throw error;await refreshMemberInbox()}catch(err){alert(err.message||'Read status save nahi hua')}
-}
-async function refreshMemberInbox(){
- try{const messages=await loadMemberInbox();const host=document.getElementById('memberInboxList');if(!host)return;
- host.innerHTML=messages.length?messages.map(m=>'<article class="panel" style="margin:10px 0;background:#123b2b"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.is_read?'Padha gaya':'Naya')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Special Offer',congratulation:'🏆 Badhai',personal:'💌 Personal Message'}[m.message_type]||'Message')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p>'+(m.is_read?'':'<button class="btn light small" onclick="markMemberMessageRead(\''+m.id+'\')">✓ Padha gaya mark karein</button>')+'</article>').join(''):'<div class="muted">Abhi koi naya message nahi hai.</div>';
- const count=messages.filter(m=>!m.is_read).length;const badge=document.getElementById('memberUnreadCount');if(badge)badge.textContent=count?'('+count+' naye)':'';
- }catch(err){const host=document.getElementById('memberInboxList');if(host)host.textContent='Messages load nahi hue: '+(err.message||'Error')}
+function renderMemberInbox(messages){
+ const host=document.getElementById('memberInboxList');if(!host)return;
+ host.innerHTML=messages.length?messages.map(m=>'<article class="panel" style="margin:10px 0;background:#123b2b"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">Padha gaya</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Special Offer',congratulation:'🏆 Badhai',personal:'💌 Personal Message'}[m.message_type]||'Message')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p></article>').join(''):'<div class="muted">Abhi koi naya message nahi hai.</div>';
 }
 async function loadMemberAccessRequests(){
  const list=document.getElementById('memberApprovalList'),status=document.getElementById('memberApprovalStatus');
