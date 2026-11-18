@@ -760,6 +760,8 @@ async function verifyMemberOtp(ev){
   if(requestError)throw requestError;
   const result=Array.isArray(request)?request[0]:request;
   if(!result)throw new Error('Member request ka result nahi mila.');
+  // Close the temporary member session so this Admin app shell never exposes local Admin data.
+  await getSupabaseClient().auth.signOut();
   if(result.request_status==='approved'){
     openModal('Member Verification Successful',
       '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile aur Admin approval dono verified hain.</p>'+
