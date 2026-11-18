@@ -407,7 +407,7 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 }
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
-<header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberOtpLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
+<header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
 <div class="wrap"><div class="notice" id="cloudSyncNotice">🟡 <b>Cloud setup baaki:</b> Aapka purana hisaab is device par surakshit hai. Supabase Cloud Sync setup poora hone tak isi device par kaam karein.</div>
 <div class="layout"><aside class="side" id="sideNav"></aside><main class="main">
 <section id="dashboard" class="page"><div class="heading"><div><h2>Namaste, Admin 👋</h2><div class="sub">Aapke saajhe business ka poora hisaab</div></div><div class="actions"><button class="btn light small" onclick="printDashboard()">📄 Dashboard PDF</button><button class="btn light small" onclick="showPage('assets')">🏗️ Investment Details</button><button class="btn" onclick="openEntry()">＋ Kamai / Kharcha likhein</button></div></div>
@@ -767,6 +767,72 @@ async function sendMemberOtp(ev){
    '<div class="actions"><button type="button" class="btn light" onclick="openMemberOtpLogin()">Back</button><button id="memberOtpVerifyBtn" class="btn">Verify OTP</button></div></form>');
  }catch(err){msg.textContent=err.message||'OTP nahi bheja ja saka.';btn.disabled=false;btn.textContent='Send OTP'}
 }
+function openMemberSetPassword(memberName){
+ openModal('Apna Login Password Banayein',
+  '<p class="muted">Namaste <b>'+esc(memberName)+'</b>. Admin ne aapka account approve kar diya hai. Ab password banayein. Aage se mobile number + password se login kar sakenge.</p>'+
+  '<form onsubmit="saveMemberPassword(event)">'+
+  '<div class="field"><label>Apna Username *</label><input name="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]+" autocomplete="username" placeholder="Jaise kul1965"></div>'+
+  '<div class="field"><label>Naya Password *</label><input name="password" type="password" required minlength="8" autocomplete="new-password" placeholder="Kam se kam 8 characters"></div>'+
+  '<div class="field"><label>Password dobara likhein *</label><input name="confirmPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="Password confirm karein"></div>'+
+  '<div id="memberPasswordMessage" class="muted" style="font-size:12px;margin:8px 0">Password kisi ko na batayein. Admin bhi aapka password nahi dekh sakta.</div>'+
+  '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Baad mein</button><button id="memberPasswordSaveBtn" class="btn">Password Save Karein</button></div></form>');
+}
+async function saveMemberPassword(ev){
+ ev.preventDefault();
+ const f=new FormData(ev.target),username=String(f.get('username')||'').trim(),password=String(f.get('password')||''),confirmPassword=String(f.get('confirmPassword')||'');
+ const msg=document.getElementById('memberPasswordMessage'),btn=document.getElementById('memberPasswordSaveBtn');
+ if(password!==confirmPassword){msg.textContent='Dono password ek jaise nahi hain.';return}
+ if(!/^[A-Za-z0-9_.-]{3,30}$/.test(username)){msg.textContent='Username 3–30 English letters, numbers, dot, _ ya - mein rakhein.';return}
+ btn.disabled=true;btn.textContent='Saving...';msg.textContent='Password surakshit tarike se save ho raha hai...';
+ try{
+  const client=getSupabaseClient();
+  const {data:authData,error:authError}=await client.auth.getUser();
+  if(authError)throw authError;
+  if(!authData.user)throw new Error('OTP session khatam ho gaya. Dobara OTP verify karein.');
+  const {data:profile,error:profileError}=await client.from('user_profiles').select('role').eq('user_id',authData.user.id).maybeSingle();
+  if(profileError)throw profileError;
+  if(!profile||profile.role!=='member')throw new Error('Admin approval abhi poori nahi hui. Admin se sampark karein.');
+  const {error:updateError}=await client.auth.updateUser({password,user_metadata:{...(authData.user.user_metadata||{}),username}});
+  if(updateError)throw updateError;
+  await client.auth.signOut();
+  memberOtpPhone='';
+  openModal('Password Taiyar Ho Gaya',
+   '<p class="muted">Aapka Username <b>'+esc(username)+'</b> save ho gaya.</p>'+
+   '<p class="notice">Agli baar Member Login mein apna registered mobile number aur password istemal karein. OTP har baar nahi lagega.</p>'+
+   '<div class="actions"><button class="btn" onclick="openMemberPasswordLogin()">Member Login</button></div>');
+ }catch(err){msg.textContent=err.message||'Password save nahi hua.';btn.disabled=false;btn.textContent='Password Save Karein'}
+}
+function openMemberPasswordLogin(){
+ openModal('Member Login — Password',
+  '<p class="muted">Apna registered mobile number aur banaya hua password daalein.</p>'+
+  '<form onsubmit="memberPasswordSignIn(event)">'+
+  '<div class="field"><label>Registered Mobile *</label><input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+91XXXXXXXXXX"></div>'+
+  '<div class="field"><label>Password *</label><input name="password" type="password" autocomplete="current-password" required></div>'+
+  '<div id="memberPasswordLoginMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+  '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button id="memberPasswordLoginBtn" class="btn">Login</button></div></form>'+
+  '<p class="muted" style="font-size:12px;margin-top:12px">Password bhool gaye? <button type="button" class="btn light small" onclick="openMemberOtpLogin()">OTP se recovery</button></p>');
+}
+async function memberPasswordSignIn(ev){
+ ev.preventDefault();
+ const f=new FormData(ev.target),phone=String(f.get('phone')||'').trim(),password=String(f.get('password')||'');
+ const msg=document.getElementById('memberPasswordLoginMessage'),btn=document.getElementById('memberPasswordLoginBtn');
+ if(!/^\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath mobile number likhein.';return}
+ btn.disabled=true;btn.textContent='Checking...';msg.textContent='Login check ho raha hai...';
+ try{
+  const {data,error}=await getSupabaseClient().auth.signInWithPassword({phone,password});
+  if(error)throw error;
+  const user=data.user;
+  const {data:profile,error:profileError}=await getSupabaseClient().from('user_profiles').select('role,display_name').eq('user_id',user.id).maybeSingle();
+  if(profileError)throw profileError;
+  if(!profile||profile.role!=='member'){await getSupabaseClient().auth.signOut();throw new Error('Yeh Member account nahi hai. Admin Login ka istemal karein.')}
+  // Do not expose the Admin app shell or its localStorage data to a member session.
+  await getSupabaseClient().auth.signOut();
+  openModal('Member Login Verified',
+   '<p class="muted">Namaste <b>'+esc(profile.display_name||'Member')+'</b>. Password sahi hai.</p>'+
+   '<p class="notice">Aapka alag, sirf-aapka account statement page agle surakshit step mein jodega. Is samay Admin ka dashboard nahi khulega.</p>'+
+   '<div class="actions"><button class="btn" onclick="closeModal()">Close</button></div>');
+ }catch(err){msg.textContent=err.message||'Login nahi hua.';btn.disabled=false;btn.textContent='Login'}
+}
 async function verifyMemberOtp(ev){
  ev.preventDefault();
  const form=ev.target,btn=document.getElementById('memberOtpVerifyBtn'),msg=document.getElementById('memberOtpVerifyMessage');
@@ -784,10 +850,7 @@ async function verifyMemberOtp(ev){
   // Close the temporary member session so this Admin app shell never exposes local Admin data.
   await getSupabaseClient().auth.signOut();
   if(result.request_status==='approved'){
-    openModal('Member Verification Successful',
-      '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile aur Admin approval dono verified hain.</p>'+
-      '<p class="notice">Member account ka secure statement/login agle setup step mein activate hoga. Abhi Admin ka data nahi khulega.</p>'+
-      '<div class="actions"><button class="btn" onclick="closeModal()">Close</button></div>');
+    openMemberSetPassword(result.matched_member_name||'Member');
   }else{
     openModal('Admin Approval Pending',
       '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile OTP se verify ho gaya hai.</p>'+
