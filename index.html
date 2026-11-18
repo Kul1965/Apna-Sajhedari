@@ -815,3 +815,31 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script></body></html>
+
+/* FINAL TABLET + MOBILE FIX: use bottom Tempo navigation on every screen size */
+.app.tempo-mode #tempoSideNav{display:none!important}
+.app.tempo-mode .tempo-workspace{display:block!important;grid-template-columns:minmax(0,1fr)!important}
+.app.tempo-mode #tempoBottomNav{
+  display:flex!important;visibility:visible!important;
+  position:fixed!important;left:0!important;right:0!important;bottom:0!important;
+  z-index:9999!important;min-height:66px!important;
+  justify-content:space-around!important;align-items:center!important;gap:4px!important;
+  padding:7px 8px calc(7px + env(safe-area-inset-bottom))!important;
+  background:linear-gradient(145deg,#183528 0%,#0c1e15 100%)!important;
+  border-top:1px solid #d49a35!important;box-shadow:0 -9px 24px rgba(0,0,0,.48)!important;
+}
+.app.tempo-mode #tempoBottomNav .nav{
+  display:flex!important;visibility:visible!important;flex:1 1 0!important;
+  min-width:0!important;width:auto!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:4px!important;
+  margin:0!important;padding:7px 3px!important;color:#c5d9cc!important;
+  font-size:11px!important;line-height:1.15!important;white-space:nowrap!important;text-align:center!important;
+}
+.app.tempo-mode #tempoBottomNav .nav span{display:block!important;width:auto!important;margin:0!important;font-size:19px!important;line-height:1.1!important}
+.app.tempo-mode #tempoBottomNav .nav.active{color:#77edb4!important;background:#174c36!important;box-shadow:inset 0 0 0 1px #39c98a55!important}
+.app.tempo-mode .wrap{padding-bottom:calc(120px + env(safe-area-inset-bottom))!important}
+@media(max-width:560px){
+  .app.tempo-mode #tempoBottomNav{min-height:62px!important;padding-left:3px!important;padding-right:3px!important}
+  .app.tempo-mode #tempoBottomNav .nav{font-size:9px!important;padding:6px 1px!important}
+  .app.tempo-mode #tempoBottomNav .nav span{font-size:17px!important}
+}
