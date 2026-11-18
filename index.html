@@ -338,6 +338,25 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
   .app.tempo-mode #tempoBottomNav .nav{font-size:9px!important;padding:6px 1px!important}
   .app.tempo-mode #tempoBottomNav .nav span{font-size:17px!important}
 }
+
+/* Compact highlighted signed-in admin identity card */
+#adminAuthBtn.admin-user-card{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;
+  min-width:112px;max-width:154px;padding:7px 11px;border:1px solid var(--gold)!important;
+  border-radius:12px;background:linear-gradient(135deg,#174b36,#0b2b20)!important;
+  color:#fff!important;box-shadow:0 0 0 2px #f4c15e20,0 4px 12px #0005!important;
+  line-height:1.12;text-align:left;white-space:normal;
+}
+#adminAuthBtn.admin-user-card .admin-card-label{font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--gold)}
+#adminAuthBtn.admin-user-card strong{display:block;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#fff}
+#adminAuthBtn.admin-user-card .admin-card-check{font-size:8px;font-weight:800;letter-spacing:.7px;color:#75e6ad}
+@media(max-width:560px){
+  .topright{gap:5px}
+  #adminAuthBtn.admin-user-card{min-width:88px;max-width:112px;padding:6px 8px;border-radius:10px}
+  #adminAuthBtn.admin-user-card strong{max-width:96px;font-size:11px}
+  #adminAuthBtn.admin-user-card .admin-card-label{font-size:8px}
+  #adminAuthBtn.admin-user-card .admin-card-check{font-size:7px}
+}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
@@ -597,6 +616,18 @@ function getSupabaseClient() {
   });
   return supabaseClient;
 }
+function updateAdminAuthCard() {
+  const authBtn=document.getElementById('adminAuthBtn');
+  if(!authBtn) return;
+  if(!signedInAdmin) {
+    authBtn.classList.remove('admin-user-card');
+    authBtn.textContent='Admin Login';
+    return;
+  }
+  const name=String(signedInAdmin.display_name||'Admin').trim();
+  authBtn.classList.add('admin-user-card');
+  authBtn.innerHTML='<span class="admin-card-label">ADMIN</span><strong>'+esc(name)+'</strong><span class="admin-card-check">✓ VERIFIED</span>';
+}
 function openAdminLogin() {
   const logged = signedInAdmin;
   if (logged) {
@@ -671,9 +702,8 @@ async function supabaseAdminSignIn(ev) {
       await client.auth.signOut();
       throw new Error('Is account ke user_profiles mein admin role nahi mila. Access rok diya gaya hai.');
     }
-    signedInAdmin={id:profile.user_id,role:profile.role,display_name:profile.display_name||'Apna Sajhedari Admin'};
-    const authBtn=document.getElementById('adminAuthBtn');
-    if(authBtn) authBtn.textContent='Admin · '+(signedInAdmin.display_name||'Admin')+' ✓';
+    signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||authData.user.user_metadata?.full_name||authData.user.email?.split('@')[0]||'Admin').trim()};
+    updateAdminAuthCard();
     closeModal();
     alert('Supabase Admin Login successful. Abhi cloud data sync alag se test aur enable karna baaki hai.');
   } catch(err) {
@@ -686,7 +716,7 @@ async function supabaseAdminSignOut() {
   catch(err) { alert(err.message||'Sign out error'); return; }
   signedInAdmin=null;
   const authBtn=document.getElementById('adminAuthBtn');
-  if(authBtn) authBtn.textContent='Admin Login';
+  updateAdminAuthCard();
   closeModal();
 }
 function showRecoveryPasswordForm() {
@@ -748,9 +778,8 @@ async function restoreSupabaseAdminSession() {
     const {data:profile,error:profileError}=await client.from('user_profiles')
       .select('user_id,role,display_name').eq('user_id',data.session.user.id).maybeSingle();
     if(!profileError && profile && profile.role==='admin') {
-      signedInAdmin={id:profile.user_id,role:profile.role,display_name:profile.display_name||'Apna Sajhedari Admin'};
-      const authBtn=document.getElementById('adminAuthBtn');
-      if(authBtn) authBtn.textContent='Admin · '+(signedInAdmin.display_name||'Admin')+' ✓';
+      signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||data.session.user.user_metadata?.full_name||data.session.user.email?.split('@')[0]||'Admin').trim()};
+      updateAdminAuthCard();
     }
   } catch(err) { console.warn('Supabase session check:',err); }
 }
