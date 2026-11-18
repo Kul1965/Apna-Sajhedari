@@ -50,8 +50,8 @@ begin
     raise exception 'Verified mobile number is missing. Please sign in using Phone OTP.';
   end if;
 
-  select count(*), min(m.id), min(m.full_name)
-    into v_count, v_member_id, v_member_name
+  select count(*)
+    into v_count
   from public.members m
   where m.active = true
     and regexp_replace(coalesce(m.mobile,''), '[^0-9]', '', 'g') <> ''
@@ -66,6 +66,18 @@ begin
   if v_count <> 1 then
     raise exception 'Mobile number did not match exactly one active member. Please ask Admin to check the saved number.';
   end if;
+
+  select m.id, m.full_name into v_member_id, v_member_name
+  from public.members m
+  where m.active = true
+    and (
+      regexp_replace(m.mobile, '[^0-9]', '', 'g') = v_digits
+      or (
+        length(regexp_replace(m.mobile, '[^0-9]', '', 'g')) >= 10
+        and right(regexp_replace(m.mobile, '[^0-9]', '', 'g'), 10) = right(v_digits, 10)
+      )
+    )
+  limit 1;
 
   if exists (
     select 1 from public.members m
