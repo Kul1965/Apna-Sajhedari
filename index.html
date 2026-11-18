@@ -1228,11 +1228,11 @@ async function syncMembersToSupabase(snapshot){
  const client=getSupabaseClient();
  for(const m of (snapshot.members||[])){
   if(!m||!m.id)continue;
-  const row={member_code:'ASJ-'+String(m.id).replace(/-/g,'').slice(0,8).toUpperCase(),full_name:String(m.name||'Member').trim(),mobile:String(m.phone||'').trim()||null,address:String(m.address||'').trim()||null,note:String(m.note||'').trim()||null,active:true};
+  const row={member_code:'ASJ-'+String(m.id).replace(/-/g,'').slice(0,8).toUpperCase(),full_name:String(m.name||'Member').trim(),mobile:String(m.phone||'').trim()||null,address:String(m.address||'').trim()||null,note:String(m.note||'').trim()||null};
   const {data:existing,error:findError}=await client.from('members').select('id').eq('id',m.id).maybeSingle();
   if(findError)throw findError;
   if(existing){const {error}=await client.from('members').update(row).eq('id',m.id);if(error)throw error}
-  else{const {error}=await client.from('members').insert({id:m.id,...row});if(error)throw error}
+  else{const {error}=await client.from('members').insert({id:m.id,...row,active:true});if(error)throw error}
  }
 }
 async function cloudWrite(snapshot){
