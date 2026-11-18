@@ -847,11 +847,11 @@ async function verifyMemberOtp(ev){
   if(requestError)throw requestError;
   const result=Array.isArray(request)?request[0]:request;
   if(!result)throw new Error('Member request ka result nahi mila.');
-  // Close the temporary member session so this Admin app shell never exposes local Admin data.
-  await getSupabaseClient().auth.signOut();
   if(result.request_status==='approved'){
     openMemberSetPassword(result.matched_member_name||'Member');
   }else{
+    // Pending members are signed out; no member session remains in the Admin app.
+    await getSupabaseClient().auth.signOut();
     openModal('Admin Approval Pending',
       '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile OTP se verify ho gaya hai.</p>'+
       '<p class="notice">Aapka request Admin ko bhej diya gaya hai. Admin ke approve karne tak account band rahega. Aap baad mein isi number se dobara OTP verify kar sakte hain.</p>'+
