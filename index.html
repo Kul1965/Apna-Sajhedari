@@ -865,6 +865,20 @@ function openMemberPasswordLogin(){
   '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button id="memberPasswordLoginBtn" class="btn">Login</button></div></form>'+
   '<p class="muted" style="font-size:12px;margin-top:12px">Password bhool gaye? <button type="button" class="btn light small" onclick="openMemberOtpLogin()">OTP se recovery</button></p>');
 }
+function showMemberStatementPortal(s){
+ const app=document.getElementById('appRoot');if(app)app.style.display='none';
+ let portal=document.getElementById('memberStatementPortal');
+ if(!portal){portal=document.createElement('div');portal.id='memberStatementPortal';document.body.appendChild(portal)}
+ const history=Array.isArray(s.capital_history)?s.capital_history:[];
+ portal.innerHTML='<div style="min-height:100vh;padding:18px 14px 36px;background:linear-gradient(145deg,#06251a,#103c2b);color:#e9fff1;font-family:inherit"><div style="max-width:760px;margin:auto">'+
+ '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #b99b55;padding-bottom:14px"><div><div style="color:#e3c77b;font-size:12px;font-weight:800">APNA SAJHEDARI • MEMBER ACCOUNT</div><h2 style="margin:5px 0 0">Namaste, '+esc(s.name||'Member')+'</h2></div><button class="btn light small" onclick="closeMemberStatementPortal()">Logout</button></div>'+
+ '<div class="panel" style="margin-top:16px"><div class="muted">Member Code</div><b>'+esc(s.member_code||'—')+'</b><div class="muted" style="margin-top:8px">Mobile: '+esc(s.mobile||'—')+'</div><div class="muted">Address: '+esc(s.address||'—')+'</div></div>'+
+ '<div class="stats" style="margin-top:14px;grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><div class="label">Laga hua paisa</div><strong>'+money(s.invested)+'</strong></div><div class="stat"><div class="label">Aapka hissa</div><strong>'+Number(s.ownership_percent||0).toFixed(2)+'%</strong></div><div class="stat"><div class="label">Faida / Nuksan</div><strong>'+money(s.profit_loss)+'</strong></div><div class="stat"><div class="label">Aaj ki kul value</div><strong>'+money(s.current_value)+'</strong></div></div>'+
+ '<div class="panel" style="margin-top:14px"><h3>Capital Change History</h3>'+(history.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody>'+history.map(x=>'<tr><td>'+esc(x.date||'—')+'</td><td>'+(x.direction==='add'?'Jama':'Nikasi')+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.note||'')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="muted">Abhi koi capital change record nahi hai.</div>')+'</div>'+
+ '<p class="muted" style="font-size:12px;margin-top:14px">Yeh sirf aapka personal account hai. Shared business ledger aur doosre members ka data yahan nahi dikhaya jata.</p></div></div>';
+ portal.style.display='block';
+}
+function closeMemberStatementPortal(){const portal=document.getElementById('memberStatementPortal');if(portal)portal.remove();const app=document.getElementById('appRoot');if(app)app.style.display=''}
 async function memberPasswordSignIn(ev){
  ev.preventDefault();
  const f=new FormData(ev.target),phone=String(f.get('phone')||'').trim(),password=String(f.get('password')||'');
@@ -878,12 +892,12 @@ async function memberPasswordSignIn(ev){
   const {data:profile,error:profileError}=await getSupabaseClient().from('user_profiles').select('role,display_name').eq('user_id',user.id).maybeSingle();
   if(profileError)throw profileError;
   if(!profile||profile.role!=='member'){await getSupabaseClient().auth.signOut();throw new Error('Yeh Member account nahi hai. Admin Login ka istemal karein.')}
-  // Do not expose the Admin app shell or its localStorage data to a member session.
+  const {data:statement,error:statementError}=await getSupabaseClient().rpc('get_my_member_statement');
+  if(statementError)throw statementError;
+  if(!statement)throw new Error('Aapka personal statement abhi nahi mila.');
   await getSupabaseClient().auth.signOut();
-  openModal('Member Login Verified',
-   '<p class="muted">Namaste <b>'+esc(profile.display_name||'Member')+'</b>. Password sahi hai.</p>'+
-   '<p class="notice">Aapka alag, sirf-aapka account statement page agle surakshit step mein jodega. Is samay Admin ka dashboard nahi khulega.</p>'+
-   '<div class="actions"><button class="btn" onclick="closeModal()">Close</button></div>');
+  closeModal();
+  showMemberStatementPortal(statement);
  }catch(err){msg.textContent=err.message||'Login nahi hua.';btn.disabled=false;btn.textContent='Login'}
 }
 async function verifyMemberOtp(ev){
