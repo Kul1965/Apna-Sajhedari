@@ -341,21 +341,21 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 
 /* Compact highlighted signed-in admin identity card */
 #adminAuthBtn.admin-user-card{
-  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;
-  min-width:112px;max-width:154px;padding:7px 11px;border:1px solid var(--gold)!important;
-  border-radius:12px;background:linear-gradient(135deg,#174b36,#0b2b20)!important;
-  color:#fff!important;box-shadow:0 0 0 2px #f4c15e20,0 4px 12px #0005!important;
-  line-height:1.12;text-align:left;white-space:normal;
+  display:inline-flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;
+  min-width:0;max-width:190px;padding:7px 10px;border:1px solid var(--gold)!important;
+  border-radius:10px;background:linear-gradient(110deg,#174b36,#0b2b20)!important;
+  color:#fff!important;box-shadow:0 0 0 1px #f4c15e20,0 3px 9px #0004!important;
+  line-height:1;white-space:nowrap;vertical-align:middle;
 }
-#adminAuthBtn.admin-user-card .admin-card-label{font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--gold)}
-#adminAuthBtn.admin-user-card strong{display:block;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:800;color:#fff}
-#adminAuthBtn.admin-user-card .admin-card-check{font-size:8px;font-weight:800;letter-spacing:.7px;color:#75e6ad}
+#adminAuthBtn.admin-user-card .admin-card-label{flex:0 0 auto;font-size:9px;font-weight:800;letter-spacing:.45px;color:var(--gold)}
+#adminAuthBtn.admin-user-card strong{display:inline-block;min-width:0;max-width:112px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:800;color:#fff}
+#adminAuthBtn.admin-user-card .admin-card-check{flex:0 0 auto;font-size:10px;font-weight:900;color:#75e6ad}
 @media(max-width:560px){
   .topright{gap:5px}
-  #adminAuthBtn.admin-user-card{min-width:88px;max-width:112px;padding:6px 8px;border-radius:10px}
-  #adminAuthBtn.admin-user-card strong{max-width:96px;font-size:11px}
+  #adminAuthBtn.admin-user-card{max-width:132px;padding:6px 7px;border-radius:9px;gap:4px}
+  #adminAuthBtn.admin-user-card strong{max-width:76px;font-size:10px}
   #adminAuthBtn.admin-user-card .admin-card-label{font-size:8px}
-  #adminAuthBtn.admin-user-card .admin-card-check{font-size:7px}
+  #adminAuthBtn.admin-user-card .admin-card-check{font-size:9px}
 }
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
@@ -626,7 +626,7 @@ function updateAdminAuthCard() {
   }
   const name=String(signedInAdmin.display_name||'Admin').trim();
   authBtn.classList.add('admin-user-card');
-  authBtn.innerHTML='<span class="admin-card-label">ADMIN</span><strong>'+esc(name)+'</strong><span class="admin-card-check">✓ VERIFIED</span>';
+  authBtn.innerHTML='<span class="admin-card-label">ADMIN:</span><strong>'+esc(name)+'</strong><span class="admin-card-check">✓</span>';
 }
 function openAdminLogin() {
   const logged = signedInAdmin;
