@@ -764,14 +764,16 @@ function openTempoMember(id){
  '<div class="field full"><label>📷 1. MEMBER PHOTO — Gallery se choose karein</label><input name="photo" type="file" accept="image/*"><small class="muted">Gallery/Photos se member ki tasveer select karein. Photo upload yahin hogi.</small></div>'+
  '<div class="field full"><label>2. Member ka naam *</label><input name="name" required maxlength="70" value="'+esc(m.name||'')+'" placeholder="Poora naam"></div>'+
  '<div class="field full"><label>Mobile number</label><input name="phone" type="tel" maxlength="30" value="'+esc(m.phone||'')+'" placeholder="Mobile number"></div>'+
+ (id?'':'<div class="field"><label>Shuruati Investment (₹) — optional</label><input name="initialInvestment" type="number" min="0" step=".01" placeholder="Paisa lagana ho to rakam likhein"></div><div class="field"><label>Investment Date</label><input name="investmentDate" type="date" value="'+dateToday()+'"></div>')+
  '<div class="field full"><label>📄 3. MEMBER DOCUMENT — Camera / Gallery / PDF</label><div class="actions"><button type="button" class="btn light small" onclick="document.getElementById(&quot;tempoDocCamera&quot;).click()">📷 Camera</button><button type="button" class="btn light small" onclick="document.getElementById(&quot;tempoDocGallery&quot;).click()">🖼️ Gallery</button><button type="button" class="btn light small" onclick="document.getElementById(&quot;tempoDocPdf&quot;).click()">📄 Choose PDF</button></div><input id="tempoDocCamera" name="docCamera" type="file" accept="image/*" capture="environment" hidden><input id="tempoDocGallery" name="docGallery" type="file" accept="image/*" hidden><input id="tempoDocPdf" name="docPdf" type="file" accept="application/pdf,.pdf" hidden><small class="muted">'+docHint+' Camera/Gallery photo compress hokar PDF banegi (2 MB se kam). PDF max 5 MB.</small></div>'+
  '<div class="field full"><label>Note</label><input name="note" maxlength="120" value="'+esc(m.note||'')+'" placeholder="Optional note"></div></div>'+
- '<p class="muted" style="font-size:11px">Member join karne ke liye investment ki rakam zaroori nahi. Paisa baad mein Investment section mein alag se jodein. Photo aur document alag rahenge. Yeh member sirf Tempo mein add hoga.</p>'+
+ '<p class="muted" style="font-size:11px">Investment optional hai: abhi paisa lagana ho to rakam likhein, nahi to khaali chhodein. Baad mein bhi Investment section se paisa jod sakte hain. Photo aur document alag rahenge. Yeh member sirf Tempo mein add hoga.</p>'+
  '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button class="btn" id="saveTempoMemberBtn">Save Member</button></div></form>');
 }
 async function saveTempoMember(ev,id){
- ev.preventDefault();const form=ev.target,btn=document.getElementById('saveTempoMemberBtn'),f=new FormData(form),name=String(f.get('name')||'').trim(),file=f.get('photo');
+ ev.preventDefault();const form=ev.target,btn=document.getElementById('saveTempoMemberBtn'),f=new FormData(form),name=String(f.get('name')||'').trim(),file=f.get('photo'),initialInvestment=Number(f.get('initialInvestment')||0);
  if(!name){alert('Member ka naam likhein.');return}
+ if(!Number.isFinite(initialInvestment)||initialInvestment<0){alert('Investment ki rakam sahi likhein.');return}
  if(btn){btn.disabled=true;btn.textContent='Saving...'}
  try{
   if(file&&file.size>8*1024*1024)throw Error('Photo 8 MB se chhoti rakhein');
@@ -779,7 +781,7 @@ async function saveTempoMember(ev,id){
   if(!Array.isArray(data.tempo.members))data.tempo.members=[];
   let m=data.tempo.members.find(z=>z.id===id);
   if(m){m.name=name;m.phone=String(f.get('phone')||'').trim();m.note=String(f.get('note')||'').trim();if(photo)m.photo=photo;if(doc){m.document=doc.data;m.documentName=doc.name;m.documentType=doc.type}}
-  else{m={id:crypto.randomUUID(),name,phone:String(f.get('phone')||'').trim(),note:String(f.get('note')||'').trim(),photo,document:doc?doc.data:null,documentName:doc?doc.name:'',documentType:doc?doc.type:'',joinedAt:dateToday()};data.tempo.members.push(m)}
+  else{m={id:crypto.randomUUID(),name,phone:String(f.get('phone')||'').trim(),note:String(f.get('note')||'').trim(),photo,document:doc?doc.data:null,documentName:doc?doc.name:'',documentType:doc?doc.type:'',joinedAt:dateToday()};data.tempo.members.push(m);if(initialInvestment>0){if(!Array.isArray(data.tempo.investments))data.tempo.investments=[];data.tempo.investments.push({id:crypto.randomUUID(),memberId:m.id,memberName:m.name,amount:initialInvestment,date:String(f.get('investmentDate')||dateToday()),note:'Member join ke samay shuruati investment'})}}
   closeModal();save();showPage('tempo');showTempoPage('members');
  }catch(err){alert(err.message||'Member save nahi hua');if(btn){btn.disabled=false;btn.textContent='Save Member'}}
 }
