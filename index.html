@@ -960,14 +960,16 @@ async function loadAdminMemberMessages(){
   // Prefer the Admin's complete local/cloud-synced list, then fill any missing IDs from Supabase.
   const localMembers=Array.isArray(data?.members)?data.members:[];
   const {data:dbMembers,error:dbMemberError}=await client.from('members').select('id,full_name,member_code').eq('active',true).order('full_name');
-  if(dbMemberError)console.warn('Supabase member lookup:',dbMemberError.message);
   const memberMap=new Map();
   localMembers.forEach(m=>{if(m&&m.id)memberMap.set(m.id,{id:m.id,name:m.name||m.full_name||'Member'})});
   (dbMembers||[]).forEach(m=>{if(m&&m.id&&!memberMap.has(m.id))memberMap.set(m.id,{id:m.id,name:m.full_name||'Member'})});
   const members=Array.from(memberMap.values());
   const target=document.getElementById('messageTargetMember');
   if(target){const current=target.value;target.innerHTML='<option value="">Sabhi Members</option>'+members.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name||m.full_name||'Member')+'</option>').join('');target.value=current}
-  if(!members.length && target)target.insertAdjacentHTML('afterend','<div class="muted" style="font-size:12px">Member list abhi app data mein nahi mili. Admin cloud sync check karein.</div>');
+  if(!members.length && target){
+    const msg=dbMemberError?'Supabase se member list nahi aayi: '+dbMemberError.message:'Member list abhi load nahi hui. Refresh dabayein.';
+    target.insertAdjacentHTML('afterend','<div class="notice" style="font-size:12px;margin-top:8px">'+esc(msg)+'</div>');
+  }
   if(!messages||!messages.length){host.innerHTML='<div class="empty">Abhi koi message publish nahi hua.</div>';return}
   const memberNames=new Map(members.map(m=>[m.id,m.name||m.full_name||'Member']));
   host.innerHTML=messages.map(m=>'<article class="panel" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p><button class="btn light small" onclick="toggleAdminMemberMessage(\''+m.id+'\','+(!m.active)+')">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button></article>').join('');
