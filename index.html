@@ -616,29 +616,43 @@ function openAdminLogin() {
     '<div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button id="authSubmitBtn" class="btn">Secure Login</button></div></form>');
 }
 function openForgotPasswordForm() {
-  openModal('Admin Password Reset',
-    '<p class="muted">Apna Supabase Admin email dalein. Reset link isi app par wapas aayega.</p>'+
+  openModal('Admin Password Reset — OTP',
+    '<p class="muted">Apna Supabase Admin email dalein. Aapke email par 6-digit OTP aayega. OTP kisi ko na batayein.</p>'+
     '<form onsubmit="sendAdminPasswordReset(event)">'+
     '<div class="field"><label>Admin Email *</label><input name="email" type="email" autocomplete="username" required placeholder="Admin email"></div>'+
     '<div id="resetEmailMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
-    '<div class="actions"><button type="button" class="btn light" onclick="openAdminLogin()">Back to Login</button><button id="resetEmailBtn" class="btn">Send Reset Link</button></div></form>');
+    '<div class="actions"><button type="button" class="btn light" onclick="openAdminLogin()">Back to Login</button><button id="resetEmailBtn" class="btn">Send OTP</button></div></form>');
 }
 async function sendAdminPasswordReset(ev) {
   ev.preventDefault();
-  const form=ev.target, fd=new FormData(form), msg=document.getElementById('resetEmailMessage'), btn=document.getElementById('resetEmailBtn');
-  btn.disabled=true; btn.textContent='Sending...';
-  try {
-    const email=String(fd.get('email')||'').trim();
-    const {error}=await getSupabaseClient().auth.resetPasswordForEmail(email,{
-      redirectTo:'https://kul1965.github.io/Apna-Sajhedari/'
-    });
-    if(error) throw error;
-    msg.textContent='Reset email request bhej di gayi. Inbox aur Spam check karein. Link expire ho to naya link mangayein.';
-    btn.disabled=false; btn.textContent='Send Again';
-  } catch(err) {
-    msg.textContent=err.message||'Reset email nahi bhej paye. Thodi der baad try karein.';
-    btn.disabled=false; btn.textContent='Try Again';
-  }
+  const form=ev.target,fd=new FormData(form),email=String(fd.get('email')||'').trim(),msg=document.getElementById('resetEmailMessage'),btn=document.getElementById('resetEmailBtn');
+  if(!email){msg.textContent='Admin email likhein.';return}
+  btn.disabled=true;btn.textContent='Sending OTP...';msg.textContent='Supabase se OTP bheja ja raha hai...';
+  try{
+    const {error}=await getSupabaseClient().auth.resetPasswordForEmail(email,{redirectTo:'https://kul1965.github.io/Apna-Sajhedari/'});
+    if(error)throw error;
+    openAdminRecoveryOtpForm(email);
+  }catch(err){msg.textContent=err.message||'OTP nahi bhej paye. Thodi der baad try karein.';btn.disabled=false;btn.textContent='Try Again'}
+}
+function openAdminRecoveryOtpForm(email){
+  openModal('OTP Verify Karein',
+    '<p class="muted">'+esc(email)+' par bheja gaya 6-digit code likhein. Inbox aur Spam dono check karein.</p>'+
+    '<form onsubmit="verifyAdminRecoveryOtp(event)">'+
+    '<input type="hidden" name="email" value="'+esc(email)+'">'+
+    '<div class="field"><label>6-digit OTP *</label><input name="token" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" minlength="6" maxlength="8" required placeholder="Email se OTP likhein"></div>'+
+    '<div id="recoveryOtpMessage" class="muted" style="font-size:12px;margin:8px 0"></div>'+
+    '<div class="actions"><button type="button" class="btn light" onclick="openForgotPasswordForm()">Back</button><button type="submit" id="verifyRecoveryOtpBtn" class="btn">Verify OTP</button></div></form>'+
+    '<div class="actions"><button type="button" class="btn light small" onclick="resendAdminRecoveryOtp(\''+esc(email)+'\')">Resend OTP</button></div>');
+}
+async function verifyAdminRecoveryOtp(ev){
+  ev.preventDefault();const f=new FormData(ev.target),email=String(f.get('email')||'').trim(),token=String(f.get('token')||'').trim(),msg=document.getElementById('recoveryOtpMessage'),btn=document.getElementById('verifyRecoveryOtpBtn');
+  btn.disabled=true;btn.textContent='Verifying...';msg.textContent='OTP verify ho raha hai...';
+  try{const {data,error}=await getSupabaseClient().auth.verifyOtp({email,token,type:'recovery'});if(error)throw error;if(!data.session)throw new Error('OTP verify hua lekin recovery session nahi mila. Naya OTP mangayein.');showRecoveryPasswordForm()}
+  catch(err){msg.textContent=err.message||'OTP galat ya expire ho gaya.';btn.disabled=false;btn.textContent='Verify OTP'}
+}
+async function resendAdminRecoveryOtp(email){
+  try{const {error}=await getSupabaseClient().auth.resetPasswordForEmail(email,{redirectTo:'https://kul1965.github.io/Apna-Sajhedari/'});if(error)throw error;alert('Naya OTP request bhej diya. Inbox aur Spam check karein.');}
+  catch(err){alert(err.message||'OTP dobara nahi bhej paye.')}
 }
 async function supabaseAdminSignIn(ev) {
   ev.preventDefault();
