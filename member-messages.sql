@@ -73,21 +73,34 @@ returns table (
   created_at timestamptz,
   is_read boolean
 )
-language sql
+language plpgsql
 security definer
 set search_path = public, auth
 as $$
-  select mm.id, mm.title, mm.body, mm.message_type, mm.created_at,
-    exists (
-      select 1 from public.member_message_reads r
-      where r.message_id = mm.id and r.member_id = m.id
-    ) as is_read
+declare
+  v_member_id uuid;
+begin
+  select m.id into v_member_id
   from public.members m
-  join public.member_messages mm
-    on mm.active = true
-   and (mm.target_member_id is null or mm.target_member_id = m.id)
-  where m.auth_user_id = auth.uid() and m.active = true
+  where m.auth_user_id = auth.uid() and m.active = true;
+  if v_member_id is null then
+    raise exception 'Active member account not found.';
+  end if;
+
+  insert into public.member_message_reads(message_id, member_id)
+  select mm.id, v_member_id
+  from public.member_messages mm
+  where mm.active = true
+    and (mm.target_member_id is null or mm.target_member_id = v_member_id)
+  on conflict (message_id, member_id) do nothing;
+
+  return query
+  select mm.id, mm.title, mm.body, mm.message_type, mm.created_at, true
+  from public.member_messages mm
+  where mm.active = true
+    and (mm.target_member_id is null or mm.target_member_id = v_member_id)
   order by mm.created_at desc;
+end;
 $$;
 
 create or replace function public.mark_my_member_message_read(p_message_id uuid)
