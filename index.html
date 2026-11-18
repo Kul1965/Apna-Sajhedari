@@ -892,6 +892,7 @@ function showMemberStatementPortal(s,messages){
  '<div class="panel" style="margin-top:14px"><div class="panelhead"><h3>📬 Suchana aur Messages</h3><span id="memberUnreadCount" class="pill"></span><button class="btn light small" onclick="refreshMemberInbox()">↻ Refresh</button></div><div id="memberInboxList"></div></div>'+
  '<p class="muted" style="font-size:12px;margin-top:14px">Yeh sirf aapka personal account hai. Shared business ledger aur doosre members ka data yahan nahi dikhaya jata.</p></div></div>';
  portal.style.display='block';
+ refreshMemberInbox();
 }
 async function closeMemberStatementPortal(){try{await getSupabaseClient().auth.signOut()}catch(e){}const portal=document.getElementById('memberStatementPortal');if(portal)portal.remove();const app=document.getElementById('appRoot');if(app)app.style.display=''}
 async function memberPasswordSignIn(ev){
