@@ -405,6 +405,35 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
   #adminAuthBtn.admin-user-card strong{max-width:calc(100% - 72px);font-size:11px}
   #adminAuthBtn.admin-user-card .admin-card-label{font-size:9px}
 }
+
+/* Dashboard greeting + action buttons: fit inside phone width */
+@media(max-width:560px){
+  #dashboard > .heading{
+    display:grid!important;
+    grid-template-columns:minmax(0,0.9fr) minmax(0,2.1fr)!important;
+    align-items:start!important;
+    gap:8px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  #dashboard > .heading > div:first-child{min-width:0!important}
+  #dashboard > .heading h2{font-size:clamp(18px,5vw,24px)!important;line-height:1.2}
+  #dashboard > .heading .sub{font-size:11px!important;line-height:1.35}
+  #dashboard > .heading > .actions{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:5px!important;
+    min-width:0!important;
+    width:100%!important;
+  }
+  #dashboard > .heading > .actions .btn{
+    width:100%!important;min-width:0!important;max-width:100%!important;
+    min-height:76px!important;padding:6px 4px!important;
+    font-size:10px!important;line-height:1.25!important;
+    white-space:normal!important;overflow-wrap:anywhere!important;
+    text-align:center!important;justify-content:center!important;
+  }
+}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
