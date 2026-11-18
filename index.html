@@ -387,7 +387,7 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
-<div class="wrap"><div class="notice">🟡 <b>Demo mode:</b> Abhi data isi browser/device mein save hota hai. Sabhi members ke mobile par ek saath live data dikhane ke liye secure online database aur member login agle setup mein jodna hoga. Is demo mein asli/private hisaab na daalein.</div>
+<div class="wrap"><div class="notice" id="cloudSyncNotice">🟡 <b>Cloud setup baaki:</b> Aapka purana hisaab is device par surakshit hai. Supabase Cloud Sync setup poora hone tak isi device par kaam karein.</div>
 <div class="layout"><aside class="side" id="sideNav"></aside><main class="main">
 <section id="dashboard" class="page"><div class="heading"><div><h2>Namaste, Admin 👋</h2><div class="sub">Aapke saajhe business ka poora hisaab</div></div><div class="actions"><button class="btn light small" onclick="printDashboard()">📄 Dashboard PDF</button><button class="btn light small" onclick="showPage('assets')">🏗️ Investment Details</button><button class="btn" onclick="openEntry()">＋ Kamai / Kharcha likhein</button></div></div>
 <div class="stats" id="stats"></div><div class="panel"><div class="panelhead"><h3>🌾 Farm ki kul keemat</h3><div class="actions"><button class="btn light small" onclick="showPage('settings')">⚙️ Farm Settings</button><button class="btn light small" onclick="showPage('assets')">Alag-alag sampatti dekhein</button></div></div><div class="stats"><div class="stat"><div class="label">Farm ki kul lagat</div><strong id="farmDashboardCost">₹0</strong></div><div class="stat"><div class="label">Aaj ki kul andazee keemat</div><strong id="farmDashboardValue">₹0</strong></div><div class="stat"><div class="label">Keemat ka antar</div><strong id="farmDashboardDifference">₹0</strong></div></div><p class="muted" style="font-size:11px">Yahan poore Farm ka kul andaza dikhega. Bhains, zameen, shed, machine aadi ka alag hisaab Investment Details mein dekhein. Ek hi sampatti ko dono jagah jodkar total na banayein.</p></div><div class="panel"><div class="panelhead"><h3>👥 Farm ke niveshak</h3><button class="btn light small" onclick="showPage('members')">Sab dekhein</button></div><div class="stats"><div class="stat"><div class="label">Kul niveshak</div><strong id="farmInvestorCount">0</strong></div><div class="stat"><div class="label">Niveshakon ka kul jama paisa</div><strong id="farmInvestorCapital">₹0</strong></div></div></div><div class="grid2"><div class="panel"><div class="panelhead"><h3>Member-wise hissedari</h3><button class="btn light small" onclick="showPage('members')">Sab dekhein</button></div><div id="shareBars"></div></div><div class="panel"><div class="panelhead"><h3>Business ka natija</h3><span class="tag in">Live calculation</span></div><div id="resultBox"></div></div></div>
@@ -457,7 +457,7 @@ function load(){
 }
 function save(){
   if(dataLoadProblem){alert('Purana data padhne mein dikkat hai. Safety ke liye koi naya data save nahi kiya jayega. Pehle original data ka backup nikalein.');return false}
-  try{localStorage.setItem(KEY,JSON.stringify(data));render();return true}
+  try{localStorage.setItem(KEY,JSON.stringify(data));render();if(cloudSyncReady)queueCloudSave();return true}
   catch(e){console.error('Apna Sajhedari save failed:',e);alert('Data save nahi hua. Storage full ya unavailable ho sakta hai. App band karne se pehle backup check karein.');return false}
 }
 function downloadOriginalSavedData(){
@@ -661,8 +661,8 @@ function openAdminLogin() {
   if (logged) {
     openModal('Supabase Admin Connection',
       '<p class="muted">Connected as <b>'+esc(logged.display_name||'Apna Sajhedari Admin')+'</b>.</p>'+
-      '<p class="muted">Secure sign-in verified. Cloud data sync is not enabled yet.</p>'+
-      '<div class="actions"><button class="btn light" onclick="closeModal()">Close</button><button class="btn danger" onclick="supabaseAdminSignOut()">Sign out</button></div>');
+      '<p class="muted">Secure Admin Login verified. Cloud Sync ka status neeche dekhein.</p>'+
+      '<div class="actions"><button class="btn" onclick="prepareCloudSync()">☁️ Cloud Sync check karein</button><button class="btn light" onclick="closeModal()">Close</button><button class="btn danger" onclick="supabaseAdminSignOut()">Sign out</button></div>');
     return;
   }
   openModal('Supabase Admin Login',
@@ -733,7 +733,7 @@ async function supabaseAdminSignIn(ev) {
     signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||authData.user.user_metadata?.full_name||authData.user.email?.split('@')[0]||'Admin').trim()};
     updateAdminAuthCard();
     closeModal();
-    alert('Supabase Admin Login successful. Abhi cloud data sync alag se test aur enable karna baaki hai.');
+    alert('Supabase Admin Login successful. Ab Cloud Sync check ho raha hai.'); prepareCloudSync();
   } catch(err) {
     msg.textContent=err.message||'Login nahi ho saka.';
     btn.disabled=false; btn.textContent='Secure Login';
@@ -808,6 +808,7 @@ async function restoreSupabaseAdminSession() {
     if(!profileError && profile && profile.role==='admin') {
       signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||data.session.user.user_metadata?.full_name||data.session.user.email?.split('@')[0]||'Admin').trim()};
       updateAdminAuthCard();
+      prepareCloudSync();
     }
   } catch(err) { console.warn('Supabase session check:',err); }
 }
@@ -900,6 +901,40 @@ if(dataLoadProblem){
   }
 }
 restoreSupabaseAdminSession();
+
+let cloudSyncReady=false, cloudSyncQueue=Promise.resolve(), cloudSyncErrorShown=false;
+function setCloudNotice(message,ok=false){const el=document.getElementById('cloudSyncNotice');if(el){el.innerHTML=(ok?'🟢 ':'🟡 ')+message;el.style.borderColor=ok?'#27875b':'#80652c'}}
+async function cloudWrite(snapshot){if(!signedInAdmin)throw Error('Admin Login karein');const {error}=await getSupabaseClient().from('app_state').upsert({user_id:signedInAdmin.id,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});if(error)throw error}
+function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>setCloudNotice('<b>Cloud Sync chalu hai:</b> Naya hisaab Supabase mein bhi save ho raha hai.',true)).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
+function downloadLocalSafetyCopy(){const raw=localStorage.getItem(KEY);if(!raw)return;const blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='apna-sajhedari-before-cloud-restore-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+async function prepareCloudSync(){
+ if(!signedInAdmin){alert('Pehle Admin Login karein.');return}
+ setCloudNotice('<b>Cloud check ho raha hai...</b> Purana data nahi badla ja raha.');
+ try{
+  const {data:row,error}=await getSupabaseClient().from('app_state').select('user_id,data').eq('user_id',signedInAdmin.id).maybeSingle();if(error)throw error;
+  const localRaw=localStorage.getItem(KEY);
+  if(!row){await cloudWrite(JSON.parse(JSON.stringify(data)));cloudSyncReady=true;setCloudNotice('<b>Cloud Sync chalu hai:</b> Is mobile ka maujooda hisaab pehli baar Cloud mein save ho gaya.',true);alert('Aapka is mobile wala hisaab Supabase Cloud mein save ho gaya.');return}
+  if(!row.data||typeof row.data!=='object'||Array.isArray(row.data))throw Error('Cloud data format sahi nahi. Kuch replace nahi kiya.');
+  if(!localRaw){data=row.data;localStorage.setItem(KEY,JSON.stringify(data));render();cloudSyncReady=true;setCloudNotice('<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par aa gaya.',true);return}
+  if(JSON.stringify(JSON.parse(localRaw))===JSON.stringify(row.data)){cloudSyncReady=true;setCloudNotice('<b>Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil raha hai.',true);return}
+  cloudSyncReady=false;
+  openModal('Cloud mein pehle se hisaab hai','<p class="muted">Supabase aur is mobile mein alag-alag data hai. Suraksha ke liye kuch overwrite nahi kiya.</p><p><b>Kaunsa hisaab rakhna hai?</b></p><div class="actions" style="flex-direction:column"><button class="btn" onclick="syncCloudData(\'upload\')">Is mobile ka hisaab Cloud mein bhejein</button><button class="btn light" onclick="syncCloudData(\'download\')">Cloud ka hisaab is mobile mein laayein</button><button class="btn light" onclick="closeModal()">Abhi nahi — dono safe rakhein</button></div>');
+ }catch(err){cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud setup baaki:</b> Supabase mein app_state table aur Admin policies banana baaki ho sakta hai. Mobile data safe hai.');alert('Supabase Cloud table abhi taiyar nahi mila. Repository mein SQL setup file bana di hai. Use Supabase SQL Editor mein chalana hoga. Mobile ka data safe hai.')}
+}
+async function syncCloudData(direction){
+ if(!signedInAdmin)return;
+ try{
+  if(direction==='upload'){
+   if(!confirm('Is mobile ka poora hisaab Cloud ke purane hisaab ki jagah save hoga. Kya aap pakka hain?'))return;
+   await cloudWrite(JSON.parse(JSON.stringify(data)));cloudSyncReady=true;closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Is mobile ka hisaab Cloud mein save hai.',true);alert('Mobile ka hisaab Cloud mein save ho gaya.');
+  }else if(direction==='download'){
+   if(!confirm('Pehle mobile data ki safety copy download hogi. Phir Cloud ka data is mobile mein aayega. Aage badhein?'))return;
+   downloadLocalSafetyCopy();const {data:row,error}=await getSupabaseClient().from('app_state').select('data').eq('user_id',signedInAdmin.id).single();if(error)throw error;
+   data=row.data;localStorage.setItem(KEY,JSON.stringify(data));render();cloudSyncReady=true;closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par load ho gaya.',true);alert('Cloud ka hisaab aa gaya. Mobile ke purane data ki safety copy download ki gayi.');
+  }
+ }catch(err){cloudSyncReady=false;alert('Cloud Sync nahi hua: '+(err.message||'Connection error')+'. Mobile data safe hai.')}
+}
+
 
 async function updateInstalledApp(){const b=document.getElementById('updateAppBtn');if(b){b.disabled=true;b.textContent='Checking...'}try{if(!('serviceWorker' in navigator)){alert('Is browser mein app update support nahi hai. Browser se app kholein.');return}const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await reg.update();if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});await new Promise(resolve=>{const w=reg.waiting;if(!w){resolve();return}w.addEventListener('statechange',()=>{if(w.state==='activated')resolve()});setTimeout(resolve,2500)});window.location.reload();return}if(reg.installing){await new Promise(resolve=>{const w=reg.installing;w.addEventListener('statechange',()=>{if(w.state==='activated'||w.state==='redundant')resolve()});setTimeout(resolve,8000)});window.location.reload();return}alert('App update check ho gaya. Agar browser mein naya version dikh raha hai, app ko band karke dobara kholein.');window.location.reload()}catch(e){alert('Update check nahi ho paya. Internet chalu karke dobara try karein.')}finally{if(b){b.disabled=false;b.textContent='↻ Update App'}}}
 
