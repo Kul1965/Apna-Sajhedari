@@ -356,10 +356,42 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 <div id="modal" class="modal hidden" onclick="if(event.target===this)closeModal()"><div class="dialog"><div class="dialoghead"><h3 id="modalTitle"></h3><button class="close" onclick="closeModal()">×</button></div><div id="modalBody"></div></div></div>
 <script>
 const KEY='apnaSajhedariDemoV1';
+let dataLoadProblem=null;
+let dataLoadRaw=null;
 let data=load();
 function blank(){return {groupName:'Mera Business',members:[],entries:[],assets:[],tempo:{groupName:'Tempo Business',assetCost:700000,assetValue:700000,members:[],investments:[],entries:[],workers:[],duties:[],payments:[]}}}
-function load(){try{let d=JSON.parse(localStorage.getItem(KEY))||blank();if(!Array.isArray(d.assets))d.assets=[];if(!Array.isArray(d.liabilities))d.liabilities=[];if(!d.tempo||typeof d.tempo!=='object')d.tempo={assetCost:700000,assetValue:700000,investments:[],entries:[]};if(!Array.isArray(d.tempo.members))d.tempo.members=[];if(!Array.isArray(d.tempo.investments))d.tempo.investments=[];if(d.tempo.members.length===0&&d.tempo.investments.length){d.tempo.investments.forEach(r=>{if(!d.tempo.members.some(m=>m.id===r.memberId)){let old=(d.members||[]).find(m=>m.id===r.memberId);d.tempo.members.push(old?{...old}:{id:r.memberId,name:r.memberName||'Tempo Member',phone:'',invested:0,photo:'',note:'Purane Tempo investment se banaya gaya member'})}})}if(!Array.isArray(d.tempo.entries))d.tempo.entries=[];if(!Number.isFinite(Number(d.tempo.assetCost)))d.tempo.assetCost=700000;if(!Number.isFinite(Number(d.tempo.assetValue)))d.tempo.assetValue=700000;return d}catch(e){return blank()}}
-function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+function load(){
+  let raw=null;
+  try{
+    raw=localStorage.getItem(KEY);
+    if(raw===null)return blank();
+    const d=JSON.parse(raw);
+    if(!d||typeof d!=='object'||Array.isArray(d)||!Array.isArray(d.members)||!Array.isArray(d.entries))throw new Error('Saved data ka format pehchana nahi gaya.');
+    if(!Array.isArray(d.assets))d.assets=[];
+    if(!Array.isArray(d.liabilities))d.liabilities=[];
+    if(!d.tempo||typeof d.tempo!=='object'||Array.isArray(d.tempo))d.tempo={assetCost:700000,assetValue:700000,investments:[],entries:[]};
+    if(!Array.isArray(d.tempo.members))d.tempo.members=[];
+    if(!Array.isArray(d.tempo.investments))d.tempo.investments=[];
+    if(d.tempo.members.length===0&&d.tempo.investments.length){d.tempo.investments.forEach(r=>{if(!d.tempo.members.some(m=>m.id===r.memberId)){let old=(d.members||[]).find(m=>m.id===r.memberId);d.tempo.members.push(old?{...old}:{id:r.memberId,name:r.memberName||'Tempo Member',phone:'',invested:0,photo:'',note:'Purane Tempo investment se banaya gaya member'})}})}
+    if(!Array.isArray(d.tempo.entries))d.tempo.entries=[];
+    if(!Array.isArray(d.tempo.workers))d.tempo.workers=[];
+    if(!Array.isArray(d.tempo.duties))d.tempo.duties=[];
+    if(!Array.isArray(d.tempo.payments))d.tempo.payments=[];
+    if(!Number.isFinite(Number(d.tempo.assetCost)))d.tempo.assetCost=700000;
+    if(!Number.isFinite(Number(d.tempo.assetValue)))d.tempo.assetValue=700000;
+    return d;
+  }catch(e){dataLoadProblem=e;dataLoadRaw=raw;console.error('Apna Sajhedari data load blocked; original data has NOT been replaced.',e);return blank()}
+}
+function save(){
+  if(dataLoadProblem){alert('Purana data padhne mein dikkat hai. Safety ke liye koi naya data save nahi kiya jayega. Pehle original data ka backup nikalein.');return false}
+  try{localStorage.setItem(KEY,JSON.stringify(data));render();return true}
+  catch(e){console.error('Apna Sajhedari save failed:',e);alert('Data save nahi hua. Storage full ya unavailable ho sakta hai. App band karne se pehle backup check karein.');return false}
+}
+function downloadOriginalSavedData(){
+  if(typeof dataLoadRaw!=='string'){alert('Original saved data browser se read nahi ho paaya. Is device ka browser storage clear na karein.');return}
+  const blob=new Blob([dataLoadRaw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='Apna-Sajhedari-original-data-recovery.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
 function saveBusinessSettings(ev){ev.preventDefault();const input=document.getElementById('businessNameInput');const name=String(input&&input.value||'').trim();const addressInput=document.getElementById('businessAddressInput');const address=String(addressInput&&addressInput.value||'').trim();if(!name){alert('कृपया व्यवसायको नाम लेख्नुहोस्।');return}data.groupName=name;data.businessAddress=address;save();alert('व्यवसायको नाम र ठेगाना सुरक्षित भयो।')}
 function money(n){return '₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2})}
 function dateToday(){return new Date().toISOString().slice(0,10)}
@@ -729,6 +761,16 @@ function saveTempoValue(ev){ev.preventDefault();const v=Number(new FormData(ev.t
 function printTempoReport(){const t=tempoTotals(),rows=data.tempo.entries.map(e=>'<tr><td>'+esc(e.date)+'</td><td>'+esc(e.note)+'</td><td>'+esc(e.category)+'</td><td>'+money(e.amount)+'</td></tr>').join(''),invest=data.tempo.investments.map(e=>'<tr><td>'+esc(e.memberName)+'</td><td>'+esc(e.date)+'</td><td>'+money(e.amount)+'</td></tr>').join('');printReportWindow('Tempo Business Report','<p>Investment '+money(t.capital)+' | Income '+money(t.income)+' | Expense '+money(t.expense)+' | Profit/Loss '+money(t.profit)+'</p><h2>Investors</h2><table><tr><th>Name</th><th>Date</th><th>Amount</th></tr>'+invest+'</table><h2>Daily entries</h2><table><tr><th>Date</th><th>Details</th><th>Type</th><th>Amount</th></tr>'+rows+'</table>')}
 
 render();
+if(dataLoadProblem){
+  const root=document.getElementById('appRoot');
+  if(root){
+    const notice=document.createElement('section');
+    notice.id='dataRecoveryWarning';
+    notice.style.cssText='margin:12px;padding:16px;border:2px solid #d49a35;border-radius:14px;background:#342b18;color:#ffe5a6;position:relative;z-index:1000';
+    notice.innerHTML='<h3 style="margin:0 0 8px">⚠️ Purana hisaab padhne mein dikkat</h3><p style="margin:0 0 10px">App ne aapka purana saved data theek se nahi padha. Safety ke liye abhi koi naya record save nahi hoga. Purana data delete ya replace nahi kiya gaya hai.</p><p style="margin:0 0 12px;font-size:12px">Pehle original saved data ki copy nikaalein. Uske baad recovery karenge.</p>'+(typeof dataLoadRaw==='string'?'<button type="button" class="btn" onclick="downloadOriginalSavedData()">⬇ Original data backup nikalein</button>':'<p style="margin:0;font-size:12px">Browser storage read nahi ho paaya. App data clear na karein.</p>');
+    root.insertBefore(notice,root.firstChild);
+  }
+}
 restoreSupabaseAdminSession();
 
 async function updateInstalledApp(){const b=document.getElementById('updateAppBtn');if(b){b.disabled=true;b.textContent='Checking...'}try{if(!('serviceWorker' in navigator)){alert('Is browser mein app update support nahi hai. Browser se app kholein.');return}const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await reg.update();if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});await new Promise(resolve=>{const w=reg.waiting;if(!w){resolve();return}w.addEventListener('statechange',()=>{if(w.state==='activated')resolve()});setTimeout(resolve,2500)});window.location.reload();return}if(reg.installing){await new Promise(resolve=>{const w=reg.installing;w.addEventListener('statechange',()=>{if(w.state==='activated'||w.state==='redundant')resolve()});setTimeout(resolve,8000)});window.location.reload();return}alert('App update check ho gaya. Agar browser mein naya version dikh raha hai, app ko band karke dobara kholein.');window.location.reload()}catch(e){alert('Update check nahi ho paya. Internet chalu karke dobara try karein.')}finally{if(b){b.disabled=false;b.textContent='↻ Update App'}}}\n\nlet deferredInstallPrompt = null;
