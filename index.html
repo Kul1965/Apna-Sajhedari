@@ -957,8 +957,14 @@ async function loadAdminMemberMessages(){
   const client=getSupabaseClient();
   const {data:messages,error}=await client.from('member_messages').select('id,title,body,message_type,target_member_id,created_at,active').order('created_at',{ascending:false});
   if(error)throw error;
-  // Admin's cloud-synced member list already contains the same UUIDs used in public.members.
-  const members=Array.isArray(data?.members)?data.members:[];
+  // Prefer the Admin's complete local/cloud-synced list, then fill any missing IDs from Supabase.
+  const localMembers=Array.isArray(data?.members)?data.members:[];
+  const {data:dbMembers,error:dbMemberError}=await client.from('members').select('id,full_name,member_code').eq('active',true).order('full_name');
+  if(dbMemberError)console.warn('Supabase member lookup:',dbMemberError.message);
+  const memberMap=new Map();
+  localMembers.forEach(m=>{if(m&&m.id)memberMap.set(m.id,{id:m.id,name:m.name||m.full_name||'Member'})});
+  (dbMembers||[]).forEach(m=>{if(m&&m.id&&!memberMap.has(m.id))memberMap.set(m.id,{id:m.id,name:m.full_name||'Member'})});
+  const members=Array.from(memberMap.values());
   const target=document.getElementById('messageTargetMember');
   if(target){const current=target.value;target.innerHTML='<option value="">Sabhi Members</option>'+members.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name||m.full_name||'Member')+'</option>').join('');target.value=current}
   if(!members.length && target)target.insertAdjacentHTML('afterend','<div class="muted" style="font-size:12px">Member list abhi app data mein nahi mili. Admin cloud sync check karein.</div>');
