@@ -919,7 +919,7 @@ async function prepareCloudSync(){
   if(JSON.stringify(JSON.parse(localRaw))===JSON.stringify(row.data)){cloudSyncReady=true;setCloudNotice('<b>Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil raha hai.',true);return}
   cloudSyncReady=false;
   openModal('Cloud mein pehle se hisaab hai','<p class="muted">Supabase aur is mobile mein alag-alag data hai. Suraksha ke liye kuch overwrite nahi kiya.</p><p><b>Kaunsa hisaab rakhna hai?</b></p><div class="actions" style="flex-direction:column"><button class="btn" onclick="syncCloudData(\'upload\')">Is mobile ka hisaab Cloud mein bhejein</button><button class="btn light" onclick="syncCloudData(\'download\')">Cloud ka hisaab is mobile mein laayein</button><button class="btn light" onclick="closeModal()">Abhi nahi — dono safe rakhein</button></div>');
- }catch(err){cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud setup baaki:</b> Supabase mein app_state table aur Admin policies banana baaki ho sakta hai. Mobile data safe hai.');alert('Supabase Cloud table abhi taiyar nahi mila. Repository mein SQL setup file bana di hai. Use Supabase SQL Editor mein chalana hoga. Mobile ka data safe hai.')}
+ }catch(err){cloudSyncReady=false;console.error('Cloud Sync exact error:',err);const detail=String(err.message||err.details||err.hint||'Unknown error');setCloudNotice('<b>Cloud connection mein dikkat:</b> '+esc(detail)+'. Mobile data safe hai.');alert('Cloud connection mein dikkat: '+detail+'\\n\\nMobile ka purana data safe hai. Is error ka screenshot bhejein.')}
 }
 async function syncCloudData(direction){
  if(!signedInAdmin)return;
