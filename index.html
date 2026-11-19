@@ -769,6 +769,14 @@ function getSupabaseClient() {
   });
   return supabaseClient;
 }
+let memberSupabaseClient = null, memberInboxRefreshTimer = null, memberPortalUserId = null;
+function getMemberSupabaseClient() {
+  if (!window.supabase || !window.supabase.createClient) throw new Error('Supabase library load nahi hui. Internet connection check karein.');
+  if (!memberSupabaseClient) memberSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: { storageKey: 'apna-sajhedari-member-auth-v1', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  });
+  return memberSupabaseClient;
+}
 function updateAdminAuthCard() {
   const authBtn=document.getElementById('adminAuthBtn');
   if(!authBtn) return;
@@ -854,7 +862,7 @@ async function sendMemberOtp(ev){
  if(!/^\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath number likhein, jaise +91XXXXXXXXXX.';return}
  btn.disabled=true;btn.textContent='Sending...';msg.textContent='Supabase se OTP bheja ja raha hai...';
  try{
-  const {error}=await getSupabaseClient().auth.signInWithOtp({phone,options:{shouldCreateUser:true}});
+  const {error}=await getMemberSupabaseClient().auth.signInWithOtp({phone,options:{shouldCreateUser:true}});
   if(error)throw error;
   memberOtpPhone=phone;
   openModal('OTP Verify Karein',
@@ -883,7 +891,7 @@ async function saveMemberPassword(ev){
  if(!/^[A-Za-z0-9_.-]{3,30}$/.test(username)){msg.textContent='Username 3–30 English letters, numbers, dot, _ ya - mein rakhein.';return}
  btn.disabled=true;btn.textContent='Saving...';msg.textContent='Password surakshit tarike se save ho raha hai...';
  try{
-  const client=getSupabaseClient();
+  const client=getMemberSupabaseClient();
   const {data:authData,error:authError}=await client.auth.getUser();
   if(authError)throw authError;
   if(!authData.user)throw new Error('OTP session khatam ho gaya. Dobara OTP verify karein.');
@@ -912,20 +920,19 @@ function openMemberPasswordLogin(){
 }
 function showMemberStatementPortal(s,messages){
  const app=document.getElementById('appRoot');if(app)app.style.display='none';
- let portal=document.getElementById('memberStatementPortal');
- if(!portal){portal=document.createElement('div');portal.id='memberStatementPortal';document.body.appendChild(portal)}
+ let portal=document.getElementById('memberStatementPortal');if(!portal){portal=document.createElement('div');portal.id='memberStatementPortal';document.body.appendChild(portal)}
  const history=Array.isArray(s.capital_history)?s.capital_history:[];
- portal.innerHTML='<div class="saj-member-portal" style="min-height:100vh;padding:18px 14px 36px;background:linear-gradient(145deg,#06251a,#103c2b);color:#e9fff1;font-family:inherit"><div style="max-width:760px;margin:auto">'+
- '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid #b99b55;padding-bottom:14px"><div><div style="color:#e3c77b;font-size:12px;font-weight:800">APNA SAJHEDARI • MEMBER ACCOUNT</div><h2 style="margin:5px 0 0">Namaste, '+esc(s.name||'Member')+'</h2></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn light small" onclick="changeMemberOwnPassword()">🔑 Password Badlein</button><button class="btn light small" onclick="closeMemberStatementPortal()">Logout</button></div></div>'+
- '<div class="panel" style="margin-top:16px"><div class="muted">Member Code</div><b>'+esc(s.member_code||'—')+'</b><div class="muted" style="margin-top:8px">Mobile: '+esc(s.mobile||'—')+'</div><div class="muted">Address: '+esc(s.address||'—')+'</div></div>'+
- '<div class="stats" style="margin-top:14px;grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><div class="label">Laga hua paisa</div><strong>'+money(s.invested)+'</strong></div><div class="stat"><div class="label">Aapka hissa</div><strong>'+Number(s.ownership_percent||0).toFixed(2)+'%</strong></div><div class="stat"><div class="label">Faida / Nuksan</div><strong>'+money(s.profit_loss)+'</strong></div><div class="stat"><div class="label">Aaj ki kul value</div><strong>'+money(s.current_value)+'</strong></div></div>'+
- '<div class="panel" style="margin-top:14px"><h3>Capital Change History</h3>'+(history.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody>'+history.map(x=>'<tr><td>'+esc(x.date||'—')+'</td><td>'+(x.direction==='add'?'Jama':'Nikasi')+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.note||'')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="muted">Abhi koi capital change record nahi hai.</div>')+'</div>'+
- '<div class="panel" style="margin-top:14px"><div class="panelhead"><h3>📬 Suchana aur Messages</h3></div><div id="memberInboxList"></div></div>'+
- '<p class="muted" style="font-size:12px;margin-top:14px">Yeh sirf aapka personal account hai. Shared business ledger aur doosre members ka data yahan nahi dikhaya jata.</p></div></div>';
- portal.style.display='block';
- renderMemberInbox(messages||[]);
+ portal.innerHTML='<div class="saj-member-portal" style="min-height:100vh;padding:0 0 calc(82px + env(safe-area-inset-bottom));background:radial-gradient(ellipse at 20% 0%,#174b36,#071912 60%);color:#e9fff1;font-family:inherit">'+
+ '<header style="position:sticky;top:0;z-index:20;padding:12px 14px;background:linear-gradient(115deg,#052e22,#08734e);border-bottom:1px solid #c49c4b;box-shadow:0 7px 20px #0006"><div style="max-width:760px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="display:flex;align-items:center;gap:9px;min-width:0"><span style="font-size:24px">🤝</span><div><b>Apna Sajhedari</b><small style="display:block;color:#d7eddf">Member Account</small></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn light small" onclick="updateMemberInstalledApp()">↻ Update App</button><button class="btn light small" onclick="changeMemberOwnPassword()">🔑 Password</button><button class="btn light small" onclick="closeMemberStatementPortal()">Logout</button></div></div></header>'+
+ '<main style="max-width:760px;margin:auto;padding:14px"><div class="panel" id="memberSummaryCard"><div style="color:#e3c77b;font-size:11px;font-weight:800">YOUR PERSONAL ACCOUNT</div><h2 style="margin:6px 0 12px">Namaste, '+esc(s.name||'Member')+'</h2><div class="muted">Member Code: <b>'+esc(s.member_code||'—')+'</b></div><div class="muted">Mobile: '+esc(s.mobile||'—')+'</div><div class="muted">Address: '+esc(s.address||'—')+'</div></div>'+
+ '<div class="stats" style="margin-top:12px;grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><div class="label">Laga hua paisa</div><strong>'+money(s.invested)+'</strong></div><div class="stat"><div class="label">Aapka hissa</div><strong>'+Number(s.ownership_percent||0).toFixed(2)+'%</strong></div><div class="stat"><div class="label">Faida / Nuksan</div><strong>'+money(s.profit_loss)+'</strong></div><div class="stat"><div class="label">Aaj ki kul value</div><strong>'+money(s.current_value)+'</strong></div></div>'+
+ '<div class="panel" style="margin-top:12px"><h3>Capital Change History</h3>'+(history.length?'<div class="tablewrap"><table><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody>'+history.map(x=>'<tr><td>'+esc(x.date||'—')+'</td><td>'+(x.direction==='add'?'Jama':'Nikasi')+'</td><td>'+money(x.amount)+'</td><td>'+esc(x.note||'')+'</td></tr>').join('')+'</tbody></table></div>':'<div class="muted">Abhi koi capital change record nahi hai.</div>')+'</div>'+
+ '<section class="panel" id="memberMessagesPanel" style="margin-top:12px"><div class="panelhead"><div><h3>📬 Messages & Notifications</h3><small class="muted">Admin se seedhi baatcheet</small></div><button class="btn light small" onclick="refreshMemberInbox()">↻ Refresh</button></div><div id="memberInboxNotice" class="muted" style="font-size:12px;margin:4px 0 10px">Messages load ho rahe hain...</div><form class="saj-chat-compose" style="margin:0 0 12px" onsubmit="sendMemberNewMessage(event)"><textarea name="body" required maxlength="4000" rows="2" placeholder="Admin ko naya message likhein..."></textarea><button class="saj-chat-send" type="submit" aria-label="Admin ko message bhejein">➤</button></form><div id="memberInboxList"></div></section>'+
+ '<p class="muted" style="font-size:12px;text-align:center;margin:16px 0">Yeh sirf aapka personal account hai. Doosre members ka data yahan nahi dikhaya jata.</p></main>'+
+ '<nav class="bottomnav" style="display:flex"><button class="nav active" onclick="document.getElementById(\'memberSummaryCard\').scrollIntoView({behavior:\'smooth\'})"><span>♙</span>Mera Hisab</button><button class="nav" onclick="document.getElementById(\'memberMessagesPanel\').scrollIntoView({behavior:\'smooth\'})"><span>✉</span>Messages <b id="memberUnreadBadge" style="color:#f4c15e"></b></button><button class="nav" onclick="closeMemberStatementPortal()"><span>↪</span>Logout</button></nav></div>';
+ portal.style.display='block';renderMemberInbox(messages||[]);if(memberInboxRefreshTimer)clearInterval(memberInboxRefreshTimer);memberInboxRefreshTimer=setInterval(refreshMemberInbox,30000);
 }
-async function closeMemberStatementPortal(){try{await getSupabaseClient().auth.signOut()}catch(e){}const portal=document.getElementById('memberStatementPortal');if(portal)portal.remove();const app=document.getElementById('appRoot');if(app)app.style.display=''}
+async function closeMemberStatementPortal(){try{await getMemberSupabaseClient().auth.signOut()}catch(e){}memberPortalUserId=null;if(memberInboxRefreshTimer){clearInterval(memberInboxRefreshTimer);memberInboxRefreshTimer=null}const portal=document.getElementById('memberStatementPortal');if(portal)portal.remove();const app=document.getElementById('appRoot');if(app)app.style.display=''}
 async function provisionMemberLogin(memberId){
  const member=data.members.find(x=>x.id===memberId);if(!member)return;
  const phone=String(member.phone||'').trim();
@@ -935,7 +942,7 @@ async function provisionMemberLogin(memberId){
  if(password.length<8){alert('Password kam se kam 8 characters ka hona chahiye.');return}
  if(!confirm(member.name+' ka Member Login banana / password badalna hai?'))return;
  try{
-  const client=getSupabaseClient();
+  const client=getMemberSupabaseClient();
   const {data:sessionData,error:sessionError}=await client.auth.getSession();
   if(sessionError)throw sessionError;
   const accessToken=sessionData?.session?.access_token;
@@ -951,6 +958,28 @@ async function provisionMemberLogin(memberId){
   alert('Member Login taiyar hai.\nMobile: '+(result.phone||phone)+'\nTemporary password wahi hai jo aapne abhi banaya. Ise member ko surakshit tareeke se dein.');
  }catch(err){console.error('Member login creation failed:',err);alert('Login nahi bana: '+(err.message||'Error'))}
 }
+async function sendMemberNewMessage(ev){
+ ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim(),button=form.querySelector('button[type="submit"]');if(!body)return;
+ if(button){button.disabled=true;button.textContent='…'}
+ try{const {error}=await getMemberSupabaseClient().rpc('send_my_member_message',{p_title:'Member ka message',p_body:body});if(error)throw error;form.reset();const inbox=await loadMemberInbox();renderMemberInbox(inbox);const n=document.getElementById('memberInboxNotice');if(n)n.textContent='✓ Message Admin ko bhej diya gaya.'}
+ catch(err){alert('Message Admin ko nahi bheja gaya: '+(err.message||'Error'))}
+ finally{if(button){button.disabled=false;button.textContent='➤'}}
+}
+async function refreshMemberInbox(){try{const inbox=await loadMemberInbox();renderMemberInbox(inbox)}catch(err){const n=document.getElementById('memberInboxNotice');if(n)n.textContent='Refresh nahi hua: '+(err.message||'Internet check karein.')}}
+async function updateMemberInstalledApp(){
+ const b=document.querySelector('#memberStatementPortal button[onclick="updateMemberInstalledApp()"]');if(b){b.disabled=true;b.textContent='Checking...'}
+ try{if(!('serviceWorker'in navigator)){alert('Is browser mein app update support nahi hai.');return}const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await reg.update();if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});await new Promise(resolve=>{const w=reg.waiting;if(!w){resolve();return}w.addEventListener('statechange',()=>{if(w.state==='activated')resolve()});setTimeout(resolve,2500)})}window.location.reload()}
+ catch(err){alert('Update check nahi hua. Internet check karke dobara try karein.')}
+ finally{if(b){b.disabled=false;b.textContent='↻ Update App'}}
+}
+async function restoreMemberPortalSession(){
+ try{const client=getMemberSupabaseClient(),{data:sessionData,error:sessionError}=await client.auth.getSession();if(sessionError||!sessionData.session)return;
+ const {data:userData,error:userError}=await client.auth.getUser();if(userError||!userData.user)return;
+ const {data:profile,error:profileError}=await client.from('user_profiles').select('role').eq('user_id',userData.user.id).maybeSingle();if(profileError||!profile||profile.role!=='member')return;
+ const {data:statement,error:statementError}=await client.rpc('get_my_member_statement');if(statementError||!statement)return;
+ const messages=await loadMemberInbox();memberPortalUserId=userData.user.id;showMemberStatementPortal(statement,messages)
+ }catch(err){console.warn('Member session restore:',err)}
+}
 async function changeMemberOwnPassword(){
  const password=prompt('Naya password likhein (kam se kam 8 characters):');
  if(password===null)return;
@@ -959,7 +988,7 @@ async function changeMemberOwnPassword(){
  if(confirmPassword===null)return;
  if(password!==confirmPassword){alert('Dono password alag hain. Dobara koshish karein.');return}
  try{
-  const {error}=await getSupabaseClient().auth.updateUser({password});
+  const {error}=await getMemberSupabaseClient().auth.updateUser({password});
   if(error)throw error;
   alert('Aapka password badal gaya. Agli baar naye password se login karein.');
  }catch(err){alert('Password nahi badla: '+(err.message||'Error'))}
@@ -971,17 +1000,18 @@ async function memberPasswordSignIn(ev){
  if(!/^\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath mobile number likhein.';return}
  btn.disabled=true;btn.textContent='Checking...';msg.textContent='Login check ho raha hai...';
  try{
-  const {data,error}=await getSupabaseClient().auth.signInWithPassword({phone,password});
+  const {data,error}=await getMemberSupabaseClient().auth.signInWithPassword({phone,password});
   if(error)throw error;
   const user=data.user;
-  const {data:profile,error:profileError}=await getSupabaseClient().from('user_profiles').select('role,display_name').eq('user_id',user.id).maybeSingle();
+  const {data:profile,error:profileError}=await getMemberSupabaseClient().from('user_profiles').select('role,display_name').eq('user_id',user.id).maybeSingle();
   if(profileError)throw profileError;
-  if(!profile||profile.role!=='member'){await getSupabaseClient().auth.signOut();throw new Error('Yeh Member account nahi hai. Admin Login ka istemal karein.')}
-  const {data:statement,error:statementError}=await getSupabaseClient().rpc('get_my_member_statement');
+  if(!profile||profile.role!=='member'){await getMemberSupabaseClient().auth.signOut();throw new Error('Yeh Member account nahi hai. Admin Login ka istemal karein.')}
+  const {data:statement,error:statementError}=await getMemberSupabaseClient().rpc('get_my_member_statement');
   if(statementError)throw statementError;
   if(!statement)throw new Error('Aapka personal statement abhi nahi mila.');
   const messages=await loadMemberInbox();
   closeModal();
+  memberPortalUserId=user.id;
   showMemberStatementPortal(statement,messages);
  }catch(err){msg.textContent=err.message||'Login nahi hua.';btn.disabled=false;btn.textContent='Login'}
 }
@@ -991,11 +1021,11 @@ async function verifyMemberOtp(ev){
  const token=String(new FormData(form).get('token')||'').trim();
  btn.disabled=true;btn.textContent='Verifying...';msg.textContent='OTP verify ho raha hai...';
  try{
-  const {data,error}=await getSupabaseClient().auth.verifyOtp({phone:memberOtpPhone,token,type:'sms'});
+  const {data,error}=await getMemberSupabaseClient().auth.verifyOtp({phone:memberOtpPhone,token,type:'sms'});
   if(error)throw error;
   const user=data.user;
   if(!user)throw new Error('OTP verify hua, lekin Auth user nahi mila.');
-  const {data:request,error:requestError}=await getSupabaseClient().rpc('request_my_member_access');
+  const {data:request,error:requestError}=await getMemberSupabaseClient().rpc('request_my_member_access');
   if(requestError)throw requestError;
   const result=Array.isArray(request)?request[0]:request;
   if(!result)throw new Error('Member request ka result nahi mila.');
@@ -1003,7 +1033,7 @@ async function verifyMemberOtp(ev){
     openMemberSetPassword(result.matched_member_name||'Member');
   }else{
     // Pending members are signed out; no member session remains in the Admin app.
-    await getSupabaseClient().auth.signOut();
+    await getMemberSupabaseClient().auth.signOut();
     openModal('Admin Approval Pending',
       '<p class="muted">Namaste <b>'+esc(result.matched_member_name||'Member')+'</b>. Aapka mobile OTP se verify ho gaya hai.</p>'+
       '<p class="notice">Aapka request Admin ko bhej diya gaya hai. Admin ke approve karne tak account band rahega. Aap baad mein isi number se dobara OTP verify kar sakte hain.</p>'+
@@ -1060,7 +1090,7 @@ async function toggleAdminMemberMessage(id,active){
  if(!signedInAdmin)return;try{const {error}=await getSupabaseClient().from('member_messages').update({active}).eq('id',id);if(error)throw error;await loadAdminMemberMessages()}catch(err){alert(err.message||'Update nahi hua')}
 }
 async function loadMemberInbox(){
- const client=getSupabaseClient(),{data,error}=await client.rpc('get_my_member_messages');if(error)throw error;
+ const client=getMemberSupabaseClient(),{data,error}=await client.rpc('get_my_member_messages');if(error)throw error;
  const {data:userData,error:userError}=await client.auth.getUser();if(userError)throw userError;
  const userId=userData.user?.id;if(!userId)throw new Error('Member session nahi mila. Dobara login karein.');
  const messages=data||[];
@@ -1129,7 +1159,7 @@ async function sendMemberMessageReply(ev,messageId,button){
  const body=String(new FormData(form).get('body')||'').trim();if(!body)return;
  if(button){button.disabled=true;button.textContent='…'}
  try{
-  const client=getSupabaseClient(),{data,error:userError}=await client.auth.getUser();
+  const client=getMemberSupabaseClient(),{data,error:userError}=await client.auth.getUser();
   if(userError)throw userError;
   if(!data.user)throw new Error('Login session khatam ho gaya. Dobara Member Login karein.');
   const {data:profile,error:profileError}=await client.from('user_profiles').select('role').eq('user_id',data.user.id).maybeSingle();
@@ -1369,6 +1399,7 @@ if(dataLoadProblem){
   }
 }
 restoreSupabaseAdminSession();
+restoreMemberPortalSession();
 
 let cloudSyncReady=false, cloudSyncQueue=Promise.resolve(), cloudSyncErrorShown=false;
 function setCloudNotice(message,ok=false){const el=document.getElementById('cloudSyncNotice');if(el){el.innerHTML=(ok?'🟢 ':'🟡 ')+message;el.style.borderColor=ok?'#27875b':'#80652c'}}
