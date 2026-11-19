@@ -1079,8 +1079,8 @@ async function loadAdminMemberMessages(){
  if(host)host.textContent='Loading...';
  try{
   const client=getSupabaseClient();
-  const {data:messages,error}=await client.from('member_messages').select('id,title,body,message_type,target_member_id,created_by,created_at,active').order('created_at',{ascending:false});if(error)throw error;
-  const {data:replies,error:replyError}=await client.from('member_message_replies').select('id,message_id,sender_id,sender_role,body,created_at').order('created_at',{ascending:true});if(replyError)throw replyError;
+  const {data:messages,error}=await client.rpc('admin_get_member_messages_v2');if(error)throw error;
+  const {data:replies,error:replyError}=await client.rpc('admin_get_member_replies_v2');if(replyError)throw replyError;
   const {data:accessRows,error:accessError}=await client.from('member_access_requests').select('auth_user_id,member_id').eq('status','approved');if(accessError)throw accessError;
    const userMemberIdsByAuth=new Map((accessRows||[]).map(r=>[r.auth_user_id,r.member_id]));
   const {data:dbMembers,error:dbMemberError}=await client.from('members').select('id,full_name,member_code,auth_user_id').eq('active',true).order('full_name');
@@ -1129,7 +1129,7 @@ async function loadMemberInbox(){
  const userId=userData.user?.id;if(!userId)throw new Error('Member session nahi mila. Dobara login karein.');
  const messages=data||[];
  let replies=[];
- if(messages.length){const ids=messages.map(m=>m.id);const {data:replyRows,error:replyError}=await client.from('member_message_replies').select('id,message_id,sender_id,sender_role,body,created_at').in('message_id',ids).order('created_at',{ascending:true});if(replyError)throw replyError;replies=replyRows||[];}
+ if(messages.length){const ids=messages.map(m=>m.id);const {data:replyRows,error:replyError}=await client.rpc('member_get_my_message_replies_v2');if(replyError)throw replyError;replies=replyRows||[];}
  return {messages,replies};
 }
 function renderMemberInbox(inbox){
@@ -1153,7 +1153,7 @@ async function sendAdminMessageReply(ev,messageId,button){
   const {data,error:authError}=await client.auth.getUser();
   if(authError)throw authError;
   if(!data||!data.user)throw new Error('Admin login session nahi mila. Dobara Admin Login karein.');
-  const {error}=await client.from('member_message_replies').insert({message_id:messageId,sender_id:data.user.id,sender_role:'admin',body});
+  const {error}=await client.rpc('admin_send_member_reply_v2',{p_message_id:messageId,p_body:body});
   if(error)throw error;
   area.value='';
   await loadAdminMemberMessages();
@@ -1199,7 +1199,7 @@ async function sendMemberMessageReply(ev,messageId,button){
   const {data:profile,error:profileError}=await client.from('user_profiles').select('role').eq('user_id',data.user.id).maybeSingle();
   if(profileError)throw profileError;
   if(!profile||profile.role!=='member')throw new Error('Member permission verify nahi hui.');
-  const {error}=await client.from('member_message_replies').insert({message_id:messageId,sender_id:data.user.id,sender_role:'member',body});
+  const {error}=await client.rpc('member_send_message_reply_v2',{p_message_id:messageId,p_body:body});
   if(error)throw error;
   form.reset();const inbox=await loadMemberInbox();renderMemberInbox(inbox);
  }catch(err){alert('Jawab nahi bheja gaya: '+(err.message||'Error'))}
