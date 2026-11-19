@@ -55,7 +55,10 @@ Deno.serve(async (req) => {
     if (memberError) throw memberError;
     if (!member || member.active === false) return json({ error: "Active member record nahi mila." }, 404);
 
-    const phone = String(member.mobile || "").trim();
+    // Accept common display formats such as +61 452 430 783 or +91-XXXXXXXXXX.
+    // Store/use the normalized E.164-style value for Supabase Auth.
+    const rawPhone = String(member.mobile || "").trim();
+    const phone = rawPhone.replace(/[^\d+]/g, "");
     if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) {
       return json({ error: "Member ka mobile number country code ke saath (+91...) save karein." }, 400);
     }
