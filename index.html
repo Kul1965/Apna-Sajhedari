@@ -991,7 +991,7 @@ async function loadAdminMemberMessages(){
   const memberNames=new Map(members.map(m=>[m.id,m.name])),userMemberIds=new Map((accessRows||[]).map(r=>[r.auth_user_id,r.member_id]));
   host.innerHTML=messages.map(m=>{
    const thread=(replies||[]).filter(r=>r.message_id===m.id).map(r=>r.sender_role==='admin'?'<div class="saj-chat-bubble saj-chat-admin saj-chat-admin-reply"><b>Admin</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small>'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>':'<div class="saj-chat-bubble saj-chat-received"><b>'+esc(memberNames.get(userMemberIds.get(r.sender_id))||'Member')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small>'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>').join('');
-   return '<article class="panel saj-message-card" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><div class="saj-chat-bubble saj-chat-admin">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small></div><div class="saj-reply-thread"><b>💬 Baatcheet</b>'+(thread||'<div class="muted" style="margin-top:6px">Abhi koi jawab nahi aaya.</div>')+'</div><form class="saj-chat-compose" onsubmit="event.preventDefault();return false"><textarea name="body" maxlength="4000" rows="2" placeholder="Member ko jawab likhein..."></textarea><button class="saj-chat-send" type="button" data-admin-reply-id="'+esc(m.id)+'" aria-label="Reply bhejein">➤</button></form><div class="actions" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn light small" type="button" onclick="toggleAdminMemberMessage('+JSON.stringify(m.id)+','+(!m.active)+')">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button><button class="btn danger small" type="button" onclick="deleteAdminMemberMessage('+JSON.stringify(m.id)+')">🗑 Delete</button></div></article>';
+   return '<article class="panel saj-message-card" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><div class="saj-chat-bubble saj-chat-admin">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small></div><div class="saj-reply-thread"><b>💬 Baatcheet</b>'+(thread||'<div class="muted" style="margin-top:6px">Abhi koi jawab nahi aaya.</div>')+'</div><form class="saj-chat-compose" onsubmit="event.preventDefault();return false"><textarea name="body" maxlength="4000" rows="2" placeholder="Member ko jawab likhein..."></textarea><button class="saj-chat-send" type="button" data-admin-reply-id="'+esc(m.id)+'" aria-label="Reply bhejein">➤</button></form><div class="actions" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn light small" type="button" data-admin-message-action="toggle" data-message-id="'+esc(m.id)+'" data-active="'+(!m.active)+'">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button><button class="btn danger small" type="button" data-admin-message-action="delete" data-message-id="'+esc(m.id)+'">🗑 Delete</button></div></article>';
   }).join('');
  }catch(err){console.error(err);if(host)host.textContent='Messages load nahi hue: '+(err.message||'Error')}
 }
@@ -1071,6 +1071,18 @@ document.addEventListener('click',function(event){
  event.preventDefault();
  event.stopPropagation();
  sendAdminMessageReply(event,button.getAttribute('data-admin-reply-id'),button);
+},true);
+document.addEventListener('click',function(event){
+ const button=event.target&&event.target.closest?event.target.closest('[data-admin-message-action][data-message-id]'):null;
+ if(!button)return;
+ const host=button.closest('#adminMemberMessages');
+ if(!host)return;
+ event.preventDefault();
+ event.stopPropagation();
+ const id=button.getAttribute('data-message-id');
+ const action=button.getAttribute('data-admin-message-action');
+ if(action==='toggle')toggleAdminMemberMessage(id,button.getAttribute('data-active')==='true');
+ if(action==='delete')deleteAdminMemberMessage(id);
 },true);
 async function sendMemberMessageReply(ev,messageId,button){
  if(ev){ev.preventDefault();ev.stopPropagation()}
