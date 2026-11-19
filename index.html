@@ -991,7 +991,7 @@ async function loadAdminMemberMessages(){
   const memberNames=new Map(members.map(m=>[m.id,m.name])),userMemberIds=new Map((accessRows||[]).map(r=>[r.auth_user_id,r.member_id]));
   host.innerHTML=messages.map(m=>{
    const thread=(replies||[]).filter(r=>r.message_id===m.id).map(r=>r.sender_role==='admin'?'<div class="saj-chat-bubble saj-chat-admin saj-chat-admin-reply"><b>Admin</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small>'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>':'<div class="saj-chat-bubble saj-chat-received"><b>'+esc(memberNames.get(userMemberIds.get(r.sender_id))||'Member')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small>'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>').join('');
-   return '<article class="panel saj-message-card" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><div class="saj-chat-bubble saj-chat-admin">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small></div><div class="saj-reply-thread"><b>💬 Baatcheet</b>'+(thread||'<div class="muted" style="margin-top:6px">Abhi koi jawab nahi aaya.</div>')+'</div><form class="saj-chat-compose" onsubmit="event.preventDefault();return false"><textarea name="body" maxlength="4000" rows="2" placeholder="Member ko jawab likhein..."></textarea><button class="saj-chat-send" type="button" data-admin-reply-id="'+esc(m.id)+'" aria-label="Reply bhejein">➤</button></form><button class="btn light small" style="margin-top:10px" onclick="toggleAdminMemberMessage('+JSON.stringify(m.id)+','+(!m.active)+')">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button></article>';
+   return '<article class="panel saj-message-card" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><div class="saj-chat-bubble saj-chat-admin">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small></div><div class="saj-reply-thread"><b>💬 Baatcheet</b>'+(thread||'<div class="muted" style="margin-top:6px">Abhi koi jawab nahi aaya.</div>')+'</div><form class="saj-chat-compose" onsubmit="event.preventDefault();return false"><textarea name="body" maxlength="4000" rows="2" placeholder="Member ko jawab likhein..."></textarea><button class="saj-chat-send" type="button" data-admin-reply-id="'+esc(m.id)+'" aria-label="Reply bhejein">➤</button></form><div class="actions" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn light small" type="button" onclick="toggleAdminMemberMessage('+JSON.stringify(m.id)+','+(!m.active)+')">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button><button class="btn danger small" type="button" onclick="deleteAdminMemberMessage('+JSON.stringify(m.id)+')">🗑 Delete</button></div></article>';
   }).join('');
  }catch(err){console.error(err);if(host)host.textContent='Messages load nahi hue: '+(err.message||'Error')}
 }
@@ -1003,6 +1003,20 @@ async function sendAdminMemberMessage(ev){
   const {error}=await getSupabaseClient().from('member_messages').insert({title,body,message_type:type,target_member_id:target||null,created_by:signedInAdmin.id});
   if(error)throw error;ev.target.reset();await loadAdminMemberMessages();alert('Message publish ho gaya. Member app mein login karke dekh sakta hai.');
  }catch(err){alert('Message save nahi hua: '+(err.message||'Error'))}
+}
+async function deleteAdminMemberMessage(id){
+ if(!signedInAdmin){alert('Pehle Admin Login karein.');return}
+ if(!confirm('Kya aap is message ko hamesha ke liye delete karna chahte hain? Iske saath is message ke sabhi replies bhi delete ho jayenge. Baaki messages safe rahenge.'))return;
+ try{
+  const client=getSupabaseClient();
+  const {data,error:authError}=await client.auth.getUser();
+  if(authError)throw authError;
+  if(!data||!data.user)throw new Error('Admin login session nahi mila. Dobara login karein.');
+  const {error}=await client.from('member_messages').delete().eq('id',id);
+  if(error)throw error;
+  await loadAdminMemberMessages();
+  alert('Message aur uske replies delete ho gaye.');
+ }catch(err){alert('Delete nahi hua: '+(err&&err.message?err.message:String(err)))}
 }
 async function toggleAdminMemberMessage(id,active){
  if(!signedInAdmin)return;try{const {error}=await getSupabaseClient().from('member_messages').update({active}).eq('id',id);if(error)throw error;await loadAdminMemberMessages()}catch(err){alert(err.message||'Update nahi hua')}
