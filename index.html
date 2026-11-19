@@ -489,7 +489,7 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 @media(max-width:560px){.saj-message-card{padding:11px!important;border-radius:16px!important}.saj-chat-bubble{max-width:96%;font-size:14px;padding:10px 12px 24px}.saj-chat-compose{gap:7px;padding:6px}.saj-chat-send{flex-basis:40px;width:40px;height:40px}}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
-<header class="top"><div class="brand"><div class="logo" role="button" tabindex="0" title="Admin access" aria-label="Admin access" onclick="openAdminLogin()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin()}">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()" hidden aria-hidden="true" tabindex="-1">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
+<header class="top"><div class="brand"><div class="logo" role="button" tabindex="0" title="Admin access" aria-label="Admin access" onclick="openAdminLogin()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin()}">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
 <div class="wrap"><div class="notice" id="cloudSyncNotice">🟡 <b>Cloud setup baaki:</b> Aapka purana hisaab is device par surakshit hai. Supabase Cloud Sync setup poora hone tak isi device par kaam karein.</div>
 <div class="layout"><aside class="side" id="sideNav"></aside><main class="main">
 <section id="dashboard" class="page"><div class="heading"><div><h2>Namaste, Admin 👋</h2><div class="sub">Aapke saajhe business ka poora hisaab</div></div><div class="actions"><button class="btn light small" onclick="printDashboard()">📄 Dashboard PDF</button><button class="btn light small" onclick="showPage('assets')">🏗️ Investment Details</button><button class="btn" onclick="openEntry()">＋ Kamai / Kharcha likhein</button></div></div>
@@ -1390,17 +1390,20 @@ function stableCloudJson(value){
 }
 async function prepareCloudSync(button){
  if(!signedInAdmin)return;
+ let cloudStage='Supabase connection';
  const status=document.getElementById('cloudSyncModalStatus');
  const checkBtn=button||document.getElementById('cloudSyncCheckBtn');
  if(checkBtn){checkBtn.disabled=true;checkBtn.textContent='Cloud Sync...'}
  if(status)status.textContent='Cloud se latest hisaab aa raha hai...';
  setCloudNotice('<b>Automatic Cloud Sync:</b> Latest hisaab check ho raha hai.');
  try{
+  cloudStage='app_state table read / permission check';
   const client=getSupabaseClient();
   const {data:row,error}=await client.from('app_state').select('user_id,data,updated_at').eq('user_id',signedInAdmin.id).maybeSingle();
   if(error)throw error;
   const localRaw=localStorage.getItem(KEY);
   if(!row){
+   cloudStage='first cloud save and members table sync';
    await cloudWrite(JSON.parse(JSON.stringify(data)));
    cloudSyncReady=true;
    setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Is device ka hisaab Cloud mein save ho gaya.',true);
@@ -1424,7 +1427,7 @@ async function prepareCloudSync(button){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
   setCloudNotice('<b>Cloud Sync mein dikkat:</b> '+esc(err.message||'Connection error')+'. Local data safe hai.');
   if(status)status.textContent='Cloud Sync nahi hua: '+String(err.message||'Connection error');
-  alert('Cloud Sync nahi ho saka. Is device ka local data safe rakha gaya hai. Internet check karke dobara try karein.');
+  alert('Cloud Sync nahi ho saka.\\nJaanch ka hissa: '+cloudStage+'\\nAsli error: '+String(err.message||err.code||'Unknown error')+'\\nIs device ka local data safe rakha gaya hai.');
  }finally{if(checkBtn){checkBtn.disabled=false;checkBtn.textContent='☁️ Cloud Sync check karein'}}
 }
 function cloudKeepBothSafe(){cloudSyncReady=false;closeModal();setCloudNotice('<b>Cloud mein data surakshit hai:</b> Is mobile ka data bhi surakshit hai. Dono ko badle bina rakha hai.');}
