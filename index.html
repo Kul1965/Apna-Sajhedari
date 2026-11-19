@@ -568,17 +568,7 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 <div id="memberApprovalList" class="panel"><div class="empty">अभी अनुरोध लोड नहीं हुए हैं।</div></div>
 </section>
 <section id="messages" class="page hidden">
-<div class="heading"><div><h2>✉ Member Messages</h2><div class="sub">Members ko notice, offer, badhai ya personal message bhejein</div></div><button class="btn light small" onclick="loadAdminMemberMessages()">↻ Refresh</button></div>
-<div class="panel saj-message-compose"><h3>Naya Message Likhein</h3>
-<form onsubmit="sendAdminMemberMessage(event)">
-<div class="formgrid">
-<div class="field full"><label>Message ka title *</label><input name="title" required maxlength="100" placeholder="Jaise: Zaroori meeting ki soochna"></div>
-<div class="field"><label>Message type</label><select name="message_type"><option value="notice">📢 Suchana</option><option value="offer">🎁 Special Offer</option><option value="congratulation">🏆 Badhai / Compliment</option><option value="personal">💌 Personal Message</option></select></div>
-<div class="field"><label>Kisko bhejna hai?</label><select name="target_member_id" id="messageTargetMember"><option value="">Sabhi Members</option></select></div>
-<div class="field full"><label>Message *</label><textarea name="body" required maxlength="4000" rows="5" placeholder="Apna message yahan likhein..."></textarea></div>
-</div><div class="actions"><button class="btn">📨 Message Publish Karein</button></div>
-<p class="muted" style="font-size:12px">Message sirf Apna Sajhedari app ke andar dikhega. Sabhi Members chunne par sabko; ek member chunne par sirf usi ko.</p>
-</form></div>
+<div class="heading"><div><h2>✉ Member Messages</h2><div class="sub">Member ki photo chunein aur seedha baat karein</div></div><button class="btn light small" onclick="loadAdminMemberMessages()">↻ Refresh</button></div>
 <div class="panel saj-message-history"><div class="panelhead"><h3>📬 Bheje gaye Messages</h3></div><div id="adminMemberMessages" class="muted">Messages load karne ke liye Refresh dabayein.</div></div>
 </section>
 <section id="tempo" class="page hidden"><div class="tempo-switchbar"><button class="btn light small" type="button" onclick="showPage('dashboard')">🏡 Pavitra Kukhura Farm</button><span class="tempo-switch-label">Tempo Business</span></div><div class="tempo-workspace"><aside id="tempoSideNav" class="tempo-side-nav"></aside><div class="tempo-main">
