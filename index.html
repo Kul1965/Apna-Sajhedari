@@ -1194,8 +1194,10 @@ function renderMemberInbox(inbox){
  const t=host.querySelector('.saj-member-one-chat-thread');if(t)t.scrollTop=t.scrollHeight;
 }
 async function sendMemberConversationMessage(ev){
- ev.preventDefault();const f=ev.target,body=String(new FormData(f).get('body')||'').trim();if(!body)return;const b=f.querySelector('button');if(b){b.disabled=true;b.textContent='…'}
- try{const inbox=await loadMemberInbox(),msgs=inbox.messages||[];if(msgs.length){const m=msgs.slice().sort((x,y)=>new Date(y.created_at)-new Date(x.created_at))[0];const {error}=await getMemberSupabaseClient().rpc('member_send_message_reply_v2',{p_message_id:m.id,p_body:body});if(error)throw error}else{const {error}=await getMemberSupabaseClient().rpc('member_send_message_v2',{p_body:body,p_title:'Member ka message'});if(error)throw error}f.reset();await refreshMemberInbox()}catch(e){alert('Message nahi bheja gaya: '+(e.message||'Error'))}finally{if(b){b.disabled=false;b.textContent='➤'}}
+ ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim();if(!body)return;const button=form.querySelector('button');if(button){button.disabled=true;button.textContent='…'}
+ try{const {error}=await getMemberSupabaseClient().rpc('member_send_message_v2',{p_body:body,p_title:'Member ka message'});if(error)throw error;form.reset();await refreshMemberInbox()}
+ catch(err){alert('Message nahi bheja gaya: '+(err.message||'Error'))}
+ finally{if(button){button.disabled=false;button.textContent='➤'}}
 }
 async function sendAdminMessageReply(ev,messageId,button){
  if(ev){ev.preventDefault();ev.stopPropagation()}
