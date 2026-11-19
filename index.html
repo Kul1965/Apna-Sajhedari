@@ -935,11 +935,21 @@ async function provisionMemberLogin(memberId){
  if(password.length<8){alert('Password kam se kam 8 characters ka hona chahiye.');return}
  if(!confirm(member.name+' ka Member Login banana / password badalna hai?'))return;
  try{
-  const {data:result,error}=await getSupabaseClient().functions.invoke('admin-create-member',{body:{member_id:memberId,password}});
-  if(error)throw error;
+  const client=getSupabaseClient();
+  const {data:sessionData,error:sessionError}=await client.auth.getSession();
+  if(sessionError)throw sessionError;
+  const accessToken=sessionData?.session?.access_token;
+  if(!accessToken)throw new Error('Admin ka Supabase login session nahi mila. Admin Login se dobara login karein, phir koshish karein.');
+  const response=await fetch(SUPABASE_URL+'/functions/v1/admin-create-member',{
+   method:'POST',
+   headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+accessToken},
+   body:JSON.stringify({member_id:memberId,password})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||result.message||('Supabase ne request rok di (HTTP '+response.status+').'));
   if(result?.error)throw new Error(result.error);
-  alert('Member Login taiyar hai.\\nMobile: '+(result.phone||phone)+'\\nTemporary password wahi hai jo aapne abhi banaya. Ise member ko surakshit tareeke se dein.');
- }catch(err){alert('Login nahi bana: '+(err.message||'Error')+'\\nSupabase Edge Function deploy hona zaroori hai.')}
+  alert('Member Login taiyar hai.\nMobile: '+(result.phone||phone)+'\nTemporary password wahi hai jo aapne abhi banaya. Ise member ko surakshit tareeke se dein.');
+ }catch(err){console.error('Member login creation failed:',err);alert('Login nahi bana: '+(err.message||'Error'))}
 }
 async function changeMemberOwnPassword(){
  const password=prompt('Naya password likhein (kam se kam 8 characters):');
