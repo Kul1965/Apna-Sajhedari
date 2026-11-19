@@ -1126,7 +1126,7 @@ async function loadAdminMemberMessages(){
  const c=getSupabaseClient(),[{data:ms,error:e},{data:rs,error:re},{data:db,error:de}]=await Promise.all([c.rpc('admin_get_member_messages_v2'),c.rpc('admin_get_member_replies_v2'),c.from('members').select('id,full_name,auth_user_id').eq('active',true).order('full_name')]);if(e)throw e;if(re)throw re;if(de)throw de;
  const local=data.members||[],members=(db||[]).map(m=>({...m,name:m.full_name||'Member',photo:(local.find(x=>String(x.id)===String(m.id))||{}).photo||''}));if(!selectedAdminChatMemberId)selectedAdminChatMemberId=(members[0]||{}).id||'';
  const photo=m=>m.photo?'<img class="saj-admin-member-avatar" src="'+esc(m.photo)+'">':'<span class="saj-admin-member-avatar saj-admin-member-initial">'+esc((m.name||'?')[0].toUpperCase())+'</span>';
- const picker='<div class="saj-admin-chat-people">'+members.map(m=>'<button class="saj-admin-person '+(String(m.id)===String(selectedAdminChatMemberId)?'active':'')+'" onclick="selectAdminChatMember('+JSON.stringify(String(m.id))+')">'+photo(m)+'<small>'+esc(m.name.split(/\s+/)[0])+'</small></button>').join('')+'</div>';
+ const picker='<div class="saj-admin-chat-people">'+members.map(m=>'<button class="saj-admin-person '+(String(m.id)===String(selectedAdminChatMemberId)?'active':'')+'" data-member-chat-id="'+esc(String(m.id))+'">'+photo(m)+'<small>'+esc(m.name.split(/\s+/)[0])+'</small></button>').join('')+'</div>';
  const m=members.find(x=>String(x.id)===String(selectedAdminChatMemberId));if(!m){host.innerHTML=picker+'<p>Koi member nahi mila.</p>';return}
  const ids=new Set([m.id]),authIds=new Set([m.auth_user_id]),msgs=(ms||[]).filter(x=>x.target_member_id===m.id||authIds.has(x.created_by)).sort((x,y)=>new Date(x.created_at)-new Date(y.created_at)),mids=new Set(msgs.map(x=>x.id)),reps=(rs||[]).filter(x=>mids.has(x.message_id));
  let rows=[];msgs.forEach(x=>{rows.push({who:authIds.has(x.created_by)?m.name:'Admin',sent:!authIds.has(x.created_by),body:x.body,time:x.created_at,id:x.id});reps.filter(y=>y.message_id===x.id).forEach(y=>rows.push({who:y.sender_role==='admin'?'Admin':m.name,sent:y.sender_role==='admin',body:y.body,time:y.created_at,id:x.id}))});rows.sort((x,y)=>new Date(x.time)-new Date(y.time));
@@ -1137,6 +1137,7 @@ async function loadAdminMemberMessages(){
  }catch(err){host.textContent='Messages load nahi hue: '+(err.message||'Error')}
 }
 function selectAdminChatMember(id){selectedAdminChatMemberId=String(id);loadAdminMemberMessages()}
+document.addEventListener('click',function(ev){const btn=ev.target.closest('#adminMemberMessages [data-member-chat-id]');if(!btn)return;ev.preventDefault();selectAdminChatMember(btn.getAttribute('data-member-chat-id'))});
 async function sendAdminSelectedChatMessage(ev){
  ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim();if(!body)return;const btn=form.querySelector('button');btn.disabled=true;
  try{const c=getSupabaseClient(),{data:ms,error}=await c.rpc('admin_get_member_messages_v2');if(error)throw error;const {data:m,error:me}=await c.from('members').select('id,auth_user_id').eq('id',selectedAdminChatMemberId).maybeSingle();if(me)throw me;if(!m)throw new Error('Member nahi mila.');
