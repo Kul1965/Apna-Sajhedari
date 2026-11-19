@@ -1147,10 +1147,15 @@ async function sendAdminSelectedChatMessage(ev){
  }catch(e){alert('Message nahi bheja gaya: '+(e.message||'Error'))}finally{btn.disabled=false}
 }
 async function deleteAdminMemberConversation(id){
- if(!confirm('Is member ki poori conversation delete karni hai?'))return;
- try{const c=getSupabaseClient(),{data:ms,error}=await c.rpc('admin_get_member_messages_v2');if(error)throw error;const {data:m,error:me}=await c.from('members').select('id,auth_user_id').eq('id',id).maybeSingle();if(me)throw me;
- for(const x of (ms||[]).filter(x=>x.target_member_id===m.id||x.created_by===m.auth_user_id)){const {error:e}=await c.from('member_messages').delete().eq('id',x.id);if(e)throw e}await loadAdminMemberMessages();
- }catch(e){alert('Delete nahi hua: '+e.message)}
+ if(!signedInAdmin){alert('Pehle Admin Login karein.');return}
+ if(!confirm('Is member ki poori conversation aur uske replies delete karne hain? Baaki members aur hisaab safe rahenge.'))return;
+ try{
+  const c=getSupabaseClient();
+  const {data,error}=await c.rpc('admin_delete_member_conversation_v1',{p_member_id:id});
+  if(error)throw error;
+  alert('Conversation delete ho gayi.');
+  await loadAdminMemberMessages();
+ }catch(e){alert('Delete nahi hua: '+(e.message||'Supabase error'))}
 }
 async function sendAdminMemberMessage(ev){
  ev.preventDefault();if(!signedInAdmin){alert('Admin Login zaroori hai.');return}
