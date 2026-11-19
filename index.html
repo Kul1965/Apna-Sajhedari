@@ -1413,10 +1413,13 @@ async function prepareCloudSync(button){
   if(!row.data||typeof row.data!=='object'||Array.isArray(row.data))throw Error('Cloud data format sahi nahi. Local data ko nahi chhua.');
   const localData=localRaw?JSON.parse(localRaw):null;
   if(localData&&stableCloudJson(localData)!==stableCloudJson(row.data)){
-   const backupKey=KEY+'_safety_'+new Date().toISOString().replace(/[:.]/g,'-');
-   localStorage.setItem(backupKey,localRaw);
-   setCloudNotice('<b>Safety copy ban gayi.</b> Cloud ka latest hisaab is device par load ho raha hai.');
+   // Do not duplicate a large backup inside localStorage: that can exceed the
+   // browser quota and block Cloud Sync. Download the current local data first.
+   cloudStage='local safety copy download';
+   downloadLocalSafetyCopy();
+   setCloudNotice('<b>Mobile data ki safety copy download ke liye bhej di gayi.</b> Ab Cloud ka latest hisaab load ho raha hai.');
   }
+  cloudStage='save Cloud data on this device';
   data=row.data;
   localStorage.setItem(KEY,JSON.stringify(data));
   render();
@@ -1427,7 +1430,7 @@ async function prepareCloudSync(button){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
   setCloudNotice('<b>Cloud Sync mein dikkat:</b> '+esc(err.message||'Connection error')+'. Local data safe hai.');
   if(status)status.textContent='Cloud Sync nahi hua: '+String(err.message||'Connection error');
-  alert('Cloud Sync nahi ho saka.\\nJaanch ka hissa: '+cloudStage+'\\nAsli error: '+String(err.message||err.code||'Unknown error')+'\\nIs device ka local data safe rakha gaya hai.');
+  alert('Cloud Sync nahi ho saka.\nJaanch ka hissa: '+cloudStage+'\nAsli error: '+String(err.message||err.code||'Unknown error')+'\nIs device ka local data safe rakha gaya hai.');
  }finally{if(checkBtn){checkBtn.disabled=false;checkBtn.textContent='☁️ Cloud Sync check karein'}}
 }
 function cloudKeepBothSafe(){cloudSyncReady=false;closeModal();setCloudNotice('<b>Cloud mein data surakshit hai:</b> Is mobile ka data bhi surakshit hai. Dono ko badle bina rakha hai.');}
