@@ -1119,28 +1119,37 @@ async function verifyMemberOtp(ev){
   }
  }catch(err){msg.textContent=err.message||'OTP verification nahi hua.';btn.disabled=false;btn.textContent='Verify OTP'}
 }
+let selectedAdminChatMemberId='';
 async function loadAdminMemberMessages(){
- const host=document.getElementById('adminMemberMessages');if(!signedInAdmin){if(host)host.textContent='Admin Login zaroori hai.';return}
- if(host)host.textContent='Loading...';
+ const host=document.getElementById('adminMemberMessages');if(!signedInAdmin){if(host)host.textContent='Admin Login zaroori hai.';return}host.textContent='Loading...';
  try{
-  const client=getSupabaseClient();
-  const {data:messages,error}=await client.rpc('admin_get_member_messages_v2');if(error)throw error;
-  const {data:replies,error:replyError}=await client.rpc('admin_get_member_replies_v2');if(replyError)throw replyError;
-  const {data:accessRows,error:accessError}=await client.from('member_access_requests').select('auth_user_id,member_id').eq('status','approved');if(accessError)throw accessError;
-   const userMemberIdsByAuth=new Map((accessRows||[]).map(r=>[r.auth_user_id,r.member_id]));
-  const {data:dbMembers,error:dbMemberError}=await client.from('members').select('id,full_name,member_code,auth_user_id').eq('active',true).order('full_name');
-  const memberMap=new Map();
-  (dbMembers||[]).forEach(m=>{if(m&&m.id){memberMap.set(m.id,{id:m.id,name:m.full_name||'Member'});if(m.auth_user_id)userMemberIdsByAuth.set(m.auth_user_id,m.id)}});
-  const members=Array.from(memberMap.values()),target=document.getElementById('messageTargetMember');
-  if(target){const current=target.value;target.innerHTML='<option value="">Sabhi Members</option>'+members.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+'</option>').join('');target.value=current}
-  if(!members.length&&target){const msg=dbMemberError?'Supabase se member list nahi aayi: '+dbMemberError.message:'Member list abhi load nahi hui. Refresh dabayein.';target.insertAdjacentHTML('afterend','<div class="notice" style="font-size:12px;margin-top:8px">'+esc(msg)+'</div>')}
-  if(!messages||!messages.length){host.innerHTML='<div class="empty">Abhi koi message publish nahi hua.</div>';return}
-  const memberNames=new Map(members.map(m=>[m.id,m.name])),userMemberIds=userMemberIdsByAuth;
-  host.innerHTML=messages.map(m=>{
-   const thread=(replies||[]).filter(r=>r.message_id===m.id).map(r=>r.sender_role==='admin'?'<div class="saj-chat-bubble saj-chat-admin saj-chat-admin-reply"><b>Admin</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small>'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>':'<div class="saj-chat-bubble saj-chat-received"><b>'+esc(memberNames.get(userMemberIds.get(r.sender_id))||'Member')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small>'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>').join('');
-   return '<article class="panel saj-message-card" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.created_by&&userMemberIds.has(m.created_by)?'Member ka message: '+esc(memberNames.get(userMemberIds.get(m.created_by))||'Member'):(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members'))+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><div class="saj-chat-bubble saj-chat-admin">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small></div><div class="saj-reply-thread"><b>💬 Baatcheet</b>'+(thread||'<div class="muted" style="margin-top:6px">Abhi koi jawab nahi aaya.</div>')+'</div><form class="saj-chat-compose" onsubmit="event.preventDefault();return false"><textarea name="body" maxlength="4000" rows="2" placeholder="Member ko jawab likhein..."></textarea><button class="saj-chat-send" type="button" data-admin-reply-id="'+esc(m.id)+'" aria-label="Reply bhejein">➤</button></form><div class="actions" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn light small" type="button" data-admin-message-action="toggle" data-message-id="'+esc(m.id)+'" data-active="'+(!m.active)+'">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button><button class="btn danger small" type="button" data-admin-message-action="delete" data-message-id="'+esc(m.id)+'">🗑 Delete</button></div></article>';
-  }).join('');
- }catch(err){console.error(err);if(host)host.textContent='Messages load nahi hue: '+(err.message||'Error')}
+ const c=getSupabaseClient(),[{data:ms,error:e},{data:rs,error:re},{data:db,error:de}]=await Promise.all([c.rpc('admin_get_member_messages_v2'),c.rpc('admin_get_member_replies_v2'),c.from('members').select('id,full_name,auth_user_id').eq('active',true).order('full_name')]);if(e)throw e;if(re)throw re;if(de)throw de;
+ const local=data.members||[],members=(db||[]).map(m=>({...m,name:m.full_name||'Member',photo:(local.find(x=>String(x.id)===String(m.id))||{}).photo||''}));if(!selectedAdminChatMemberId)selectedAdminChatMemberId=(members[0]||{}).id||'';
+ const photo=m=>m.photo?'<img class="saj-admin-member-avatar" src="'+esc(m.photo)+'">':'<span class="saj-admin-member-avatar saj-admin-member-initial">'+esc((m.name||'?')[0].toUpperCase())+'</span>';
+ const picker='<div class="saj-admin-chat-people">'+members.map(m=>'<button class="saj-admin-person '+(String(m.id)===String(selectedAdminChatMemberId)?'active':'')+'" onclick="selectAdminChatMember('+JSON.stringify(String(m.id))+')">'+photo(m)+'<small>'+esc(m.name.split(/\s+/)[0])+'</small></button>').join('')+'</div>';
+ const m=members.find(x=>String(x.id)===String(selectedAdminChatMemberId));if(!m){host.innerHTML=picker+'<p>Koi member nahi mila.</p>';return}
+ const ids=new Set([m.id]),authIds=new Set([m.auth_user_id]),msgs=(ms||[]).filter(x=>x.target_member_id===m.id||authIds.has(x.created_by)).sort((x,y)=>new Date(x.created_at)-new Date(y.created_at)),mids=new Set(msgs.map(x=>x.id)),reps=(rs||[]).filter(x=>mids.has(x.message_id));
+ let rows=[];msgs.forEach(x=>{rows.push({who:authIds.has(x.created_by)?m.name:'Admin',sent:!authIds.has(x.created_by),body:x.body,time:x.created_at,id:x.id});reps.filter(y=>y.message_id===x.id).forEach(y=>rows.push({who:y.sender_role==='admin'?'Admin':m.name,sent:y.sender_role==='admin',body:y.body,time:y.created_at,id:x.id}))});rows.sort((x,y)=>new Date(x.time)-new Date(y.time));
+ const bubbles=rows.map(x=>'<div class="saj-chat-bubble '+(x.sent?'saj-chat-admin':'saj-chat-received')+'"><b>'+esc(x.who)+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(x.body)+'</p><small>'+new Date(x.time).toLocaleString('en-IN')+'</small></div>').join('');
+ const latest=msgs[msgs.length-1],more='<details class="saj-chat-more"><summary>⋮</summary><div><button onclick="deleteAdminMemberConversation('+JSON.stringify(String(m.id))+')">Delete conversation</button></div></details>';
+ host.innerHTML=picker+'<section class="saj-admin-chat-window"><header class="saj-admin-chat-title">'+photo(m)+'<b>'+esc(m.name)+'</b>'+more+'</header><div class="saj-admin-chat-thread">'+(bubbles||'<p class="muted">Abhi message nahi. Neeche likhein.</p>')+'</div><form class="saj-chat-compose" onsubmit="sendAdminSelectedChatMessage(event)"><textarea name="body" rows="1" required placeholder="Message likhein..."></textarea><button class="saj-chat-send">➤</button></form></section>';
+ const t=host.querySelector('.saj-admin-chat-thread');if(t)t.scrollTop=t.scrollHeight;
+ }catch(err){host.textContent='Messages load nahi hue: '+(err.message||'Error')}
+}
+function selectAdminChatMember(id){selectedAdminChatMemberId=String(id);loadAdminMemberMessages()}
+async function sendAdminSelectedChatMessage(ev){
+ ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim();if(!body)return;const btn=form.querySelector('button');btn.disabled=true;
+ try{const c=getSupabaseClient(),{data:ms,error}=await c.rpc('admin_get_member_messages_v2');if(error)throw error;const {data:m,error:me}=await c.from('members').select('id,auth_user_id').eq('id',selectedAdminChatMemberId).maybeSingle();if(me)throw me;if(!m)throw new Error('Member nahi mila.');
+ const latest=(ms||[]).filter(x=>x.target_member_id===m.id||x.created_by===m.auth_user_id).sort((x,y)=>new Date(y.created_at)-new Date(x.created_at))[0];
+ if(latest){const {error:e}=await c.rpc('admin_send_member_reply_v2',{p_message_id:latest.id,p_body:body});if(e)throw e}else{const {data:u,error:ue}=await c.auth.getUser();if(ue)throw ue;const {error:e}=await c.from('member_messages').insert({title:'Admin ka message',body,message_type:'personal',target_member_id:m.id,created_by:u.user.id});if(e)throw e}
+ form.reset();await loadAdminMemberMessages();
+ }catch(e){alert('Message nahi bheja gaya: '+(e.message||'Error'))}finally{btn.disabled=false}
+}
+async function deleteAdminMemberConversation(id){
+ if(!confirm('Is member ki poori conversation delete karni hai?'))return;
+ try{const c=getSupabaseClient(),{data:ms,error}=await c.rpc('admin_get_member_messages_v2');if(error)throw error;const {data:m,error:me}=await c.from('members').select('id,auth_user_id').eq('id',id).maybeSingle();if(me)throw me;
+ for(const x of (ms||[]).filter(x=>x.target_member_id===m.id||x.created_by===m.auth_user_id)){const {error:e}=await c.from('member_messages').delete().eq('id',x.id);if(e)throw e}await loadAdminMemberMessages();
+ }catch(e){alert('Delete nahi hua: '+e.message)}
 }
 async function sendAdminMemberMessage(ev){
  ev.preventDefault();if(!signedInAdmin){alert('Admin Login zaroori hai.');return}
