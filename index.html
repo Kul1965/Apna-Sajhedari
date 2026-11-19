@@ -929,7 +929,7 @@ async function closeMemberStatementPortal(){try{await getSupabaseClient().auth.s
 async function provisionMemberLogin(memberId){
  const member=data.members.find(x=>x.id===memberId);if(!member)return;
  const phone=String(member.phone||'').trim();
- if(!/^\\+[1-9][0-9]{7,14}$/.test(phone)){alert('Pehle member ka mobile number country code ke saath save karein, jaise +91XXXXXXXXXX.');return}
+ if(!/^\+[1-9][0-9]{7,14}$/.test(phone)){alert('Pehle member ka mobile number country code ke saath save karein, jaise +91XXXXXXXXXX.');return}
  const password=prompt(member.name+' ke liye temporary password banayein (kam se kam 8 characters):');
  if(password===null)return;
  if(password.length<8){alert('Password kam se kam 8 characters ka hona chahiye.');return}
