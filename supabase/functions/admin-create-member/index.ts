@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   let stage = "request";
   try {
     const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace(/^Bearer\\s+/i, "").trim();
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!token) return reply({ error: "Admin login nahi mila. App mein Admin se dobara login karein.", stage }, 401);
 
     stage = "server configuration";
@@ -83,8 +83,8 @@ Deno.serve(async (req) => {
 
     stage = "member mobile number check";
     const rawPhone = String(member.mobile || "").trim();
-    const phone = rawPhone.replace(/[^\\d+]/g, "");
-    if (!/^\\+[1-9][0-9]{7,14}$/.test(phone)) {
+    const phone = rawPhone.replace(/[^\d+]/g, "");
+    if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) {
       return reply({
         error: "Member ka Supabase mobile number country code ke saath hona chahiye. Abhi saved number: " + (rawPhone || "khali"),
         stage,
