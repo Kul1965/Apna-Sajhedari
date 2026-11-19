@@ -921,7 +921,6 @@ async function memberPasswordSignIn(ev){
   if(statementError)throw statementError;
   if(!statement)throw new Error('Aapka personal statement abhi nahi mila.');
   const messages=await loadMemberInbox();
-  await getSupabaseClient().auth.signOut();
   closeModal();
   showMemberStatementPortal(statement,messages);
  }catch(err){msg.textContent=err.message||'Login nahi hua.';btn.disabled=false;btn.textContent='Login'}
@@ -957,24 +956,22 @@ async function loadAdminMemberMessages(){
  if(host)host.textContent='Loading...';
  try{
   const client=getSupabaseClient();
-  const {data:messages,error}=await client.from('member_messages').select('id,title,body,message_type,target_member_id,created_at,active').order('created_at',{ascending:false});
-  if(error)throw error;
-  // Prefer the Admin's complete local/cloud-synced list, then fill any missing IDs from Supabase.
+  const {data:messages,error}=await client.from('member_messages').select('id,title,body,message_type,target_member_id,created_at,active').order('created_at',{ascending:false});if(error)throw error;
+  const {data:replies,error:replyError}=await client.from('member_message_replies').select('id,message_id,member_user_id,body,created_at').order('created_at',{ascending:true});if(replyError)throw replyError;
+  const {data:accessRows,error:accessError}=await client.from('member_access_requests').select('auth_user_id,member_id').eq('status','approved');if(accessError)throw accessError;
   const localMembers=Array.isArray(data?.members)?data.members:[];
   const {data:dbMembers,error:dbMemberError}=await client.from('members').select('id,full_name,member_code').eq('active',true).order('full_name');
-  const memberMap=new Map();
-  localMembers.forEach(m=>{if(m&&m.id)memberMap.set(m.id,{id:m.id,name:m.name||m.full_name||'Member'})});
+  const memberMap=new Map();localMembers.forEach(m=>{if(m&&m.id)memberMap.set(m.id,{id:m.id,name:m.name||m.full_name||'Member'})});
   (dbMembers||[]).forEach(m=>{if(m&&m.id&&!memberMap.has(m.id))memberMap.set(m.id,{id:m.id,name:m.full_name||'Member'})});
-  const members=Array.from(memberMap.values());
-  const target=document.getElementById('messageTargetMember');
-  if(target){const current=target.value;target.innerHTML='<option value="">Sabhi Members</option>'+members.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name||m.full_name||'Member')+'</option>').join('');target.value=current}
-  if(!members.length && target){
-    const msg=dbMemberError?'Supabase se member list nahi aayi: '+dbMemberError.message:'Member list abhi load nahi hui. Refresh dabayein.';
-    target.insertAdjacentHTML('afterend','<div class="notice" style="font-size:12px;margin-top:8px">'+esc(msg)+'</div>');
-  }
+  const members=Array.from(memberMap.values()),target=document.getElementById('messageTargetMember');
+  if(target){const current=target.value;target.innerHTML='<option value="">Sabhi Members</option>'+members.map(m=>'<option value="'+esc(m.id)+'">'+esc(m.name)+'</option>').join('');target.value=current}
+  if(!members.length&&target){const msg=dbMemberError?'Supabase se member list nahi aayi: '+dbMemberError.message:'Member list abhi load nahi hui. Refresh dabayein.';target.insertAdjacentHTML('afterend','<div class="notice" style="font-size:12px;margin-top:8px">'+esc(msg)+'</div>')}
   if(!messages||!messages.length){host.innerHTML='<div class="empty">Abhi koi message publish nahi hua.</div>';return}
-  const memberNames=new Map(members.map(m=>[m.id,m.name||m.full_name||'Member']));
-  host.innerHTML=messages.map(m=>'<article class="panel" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p><button class="btn light small" onclick="toggleAdminMemberMessage(\''+m.id+'\','+(!m.active)+')">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button></article>').join('');
+  const memberNames=new Map(members.map(m=>[m.id,m.name])),userMemberIds=new Map((accessRows||[]).map(r=>[r.auth_user_id,r.member_id]));
+  host.innerHTML=messages.map(m=>{
+   const thread=(replies||[]).filter(r=>r.message_id===m.id).map(r=>'<div style="border-left:3px solid #d49a35;padding:8px 10px;margin:8px 0;background:#f5f8f5;border-radius:8px"><b>'+esc(memberNames.get(userMemberIds.get(r.member_user_id))||'Member')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small class="muted">'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>').join('');
+   return '<article class="panel" style="margin:10px 0"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">'+(m.active?'Active':'Hidden')+'</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Offer',congratulation:'🏆 Badhai',personal:'💌 Personal'}[m.message_type]||'Message')+' • '+(m.target_member_id?esc(memberNames.get(m.target_member_id)||'Selected member'):'Sabhi Members')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p><div style="margin-top:12px"><b>💬 Members ke jawab</b>'+(thread||'<div class="muted" style="margin-top:6px">Abhi koi jawab nahi aaya.</div>')+'</div><button class="btn light small" onclick="toggleAdminMemberMessage(\\''+m.id+'\\','+(!m.active)+')">'+(m.active?'Hide karein':'Dobara dikhayein')+'</button></article>';
+  }).join('');
  }catch(err){console.error(err);if(host)host.textContent='Messages load nahi hue: '+(err.message||'Error')}
 }
 async function sendAdminMemberMessage(ev){
@@ -990,12 +987,28 @@ async function toggleAdminMemberMessage(id,active){
  if(!signedInAdmin)return;try{const {error}=await getSupabaseClient().from('member_messages').update({active}).eq('id',id);if(error)throw error;await loadAdminMemberMessages()}catch(err){alert(err.message||'Update nahi hua')}
 }
 async function loadMemberInbox(){
- const {data,error}=await getSupabaseClient().rpc('get_my_member_messages');
- if(error)throw error;return data||[];
+ const client=getSupabaseClient(),{data,error}=await client.rpc('get_my_member_messages');if(error)throw error;
+ const {data:userData,error:userError}=await client.auth.getUser();if(userError)throw userError;
+ const userId=userData.user?.id;if(!userId)throw new Error('Member session nahi mila. Dobara login karein.');
+ const {data:replies,error:replyError}=await client.from('member_message_replies').select('id,message_id,body,created_at').eq('member_user_id',userId).order('created_at',{ascending:true});if(replyError)throw replyError;
+ return {messages:data||[],replies:replies||[]};
 }
-function renderMemberInbox(messages){
+function renderMemberInbox(inbox){
  const host=document.getElementById('memberInboxList');if(!host)return;
- host.innerHTML=messages.length?messages.map(m=>'<article class="panel" style="margin:10px 0;background:#123b2b"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">Padha gaya</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Special Offer',congratulation:'🏆 Badhai',personal:'💌 Personal Message'}[m.message_type]||'Message')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p></article>').join(''):'<div class="muted">Abhi koi naya message nahi hai.</div>';
+ const messages=Array.isArray(inbox)?inbox:(inbox.messages||[]),replies=Array.isArray(inbox)?[]:(inbox.replies||[]);
+ host.innerHTML=messages.length?messages.map(m=>{
+  const thread=replies.filter(r=>r.message_id===m.id).map(r=>'<div style="border-left:3px solid #d49a35;padding:8px 10px;margin:8px 0;background:#174b37;border-radius:8px"><b>Aapka jawab</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small class="muted">'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>').join('');
+  return '<article class="panel" style="margin:10px 0;background:#123b2b;color:#e9fff1;border:1px solid #b99b55"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">Padha gaya</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Special Offer',congratulation:'🏆 Badhai',personal:'💌 Personal Message'}[m.message_type]||'Message')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><p style="white-space:pre-wrap">'+esc(m.body)+'</p><div>'+thread+'</div><form onsubmit="sendMemberMessageReply(event,\\''+m.id+'\\')"><div class="field"><label style="color:#e9fff1">Apna jawab likhein</label><textarea name="body" required maxlength="4000" rows="3" placeholder="Yahan apna jawab likhein..."></textarea></div><div class="actions"><button class="btn light small" type="submit">↩ Jawab bhejein</button></div></form></article>';
+ }).join(''):'<div class="muted">Abhi koi naya message nahi hai.</div>';
+}
+async function sendMemberMessageReply(ev,messageId){
+ ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim();if(!body)return;
+ const button=form.querySelector('button[type="submit"]');if(button){button.disabled=true;button.textContent='Bhej rahe hain...'}
+ try{
+  const client=getSupabaseClient(),{data,error:userError}=await client.auth.getUser();if(userError)throw userError;if(!data.user)throw new Error('Login session khatam ho gaya. Dobara Member Login karein.');
+  const {error}=await client.from('member_message_replies').insert({message_id:messageId,member_user_id:data.user.id,body});if(error)throw error;
+  const inbox=await loadMemberInbox();renderMemberInbox(inbox);alert('Aapka jawab Admin ko bhej diya gaya hai.');
+ }catch(err){alert('Jawab nahi bheja gaya: '+(err.message||'Error'));if(button){button.disabled=false;button.textContent='↩ Jawab bhejein'}}
 }
 async function loadMemberAccessRequests(){
  const list=document.getElementById('memberApprovalList'),status=document.getElementById('memberApprovalStatus');
