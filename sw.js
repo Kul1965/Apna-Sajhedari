@@ -1,4 +1,4 @@
-const CACHE_NAME = "apna-sajhedari-shell-v65";
+const CACHE_NAME = "apna-sajhedari-shell-v66";
 const APP_SHELL = [
   "./",
   "./index.html",
