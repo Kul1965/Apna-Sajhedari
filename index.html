@@ -1390,7 +1390,6 @@ function stableCloudJson(value){
 }
 async function prepareCloudSync(button){
  if(!signedInAdmin)return;
- let cloudStage='Supabase connection';
  const status=document.getElementById('cloudSyncModalStatus');
  const checkBtn=button||document.getElementById('cloudSyncCheckBtn');
  if(checkBtn){checkBtn.disabled=true;checkBtn.textContent='Cloud Sync...'}
@@ -1398,12 +1397,10 @@ async function prepareCloudSync(button){
  setCloudNotice('<b>Automatic Cloud Sync:</b> Latest hisaab check ho raha hai.');
  try{
   const client=getSupabaseClient();
-  cloudStage='app_state table read / permission check';
   const {data:row,error}=await client.from('app_state').select('user_id,data,updated_at').eq('user_id',signedInAdmin.id).maybeSingle();
   if(error)throw error;
   const localRaw=localStorage.getItem(KEY);
   if(!row){
-   cloudStage='first cloud save and members table sync';
    await cloudWrite(JSON.parse(JSON.stringify(data)));
    cloudSyncReady=true;
    setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Is device ka hisaab Cloud mein save ho gaya.',true);
@@ -1427,7 +1424,7 @@ async function prepareCloudSync(button){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
   setCloudNotice('<b>Cloud Sync mein dikkat:</b> '+esc(err.message||'Connection error')+'. Local data safe hai.');
   if(status)status.textContent='Cloud Sync nahi hua: '+String(err.message||'Connection error');
-  alert('Cloud Sync nahi ho saka.\nJaanch ka hissa: '+cloudStage+'\nAsli error: '+String(err.message||err.code||'Unknown error')+'\nIs device ka local data safe rakha gaya hai.');
+  alert('Cloud Sync nahi ho saka. Is device ka local data safe rakha gaya hai. Internet check karke dobara try karein.');
  }finally{if(checkBtn){checkBtn.disabled=false;checkBtn.textContent='☁️ Cloud Sync check karein'}}
 }
 function cloudKeepBothSafe(){cloudSyncReady=false;closeModal();setCloudNotice('<b>Cloud mein data surakshit hai:</b> Is mobile ka data bhi surakshit hai. Dono ko badle bina rakha hai.');}
