@@ -534,6 +534,24 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 #memberStatementPortal .saj-message-compose textarea::placeholder{color:#708578!important}
 @media(max-width:560px){.saj-chat-bubble{max-width:86%;font-size:14px;padding:10px 12px 23px}.saj-chat-compose{gap:6px;padding:5px 6px 5px 11px}.saj-chat-send{flex-basis:40px;width:40px;height:40px}}
 
+/* One conversation, round member selector */
+.saj-member-one-chat{border:1px solid #b99b55;border-radius:18px;background:linear-gradient(160deg,#0e3022,#092319);padding:10px}
+.saj-member-one-chat-head{display:flex;justify-content:space-between;padding:6px;color:#f4e2b4;border-bottom:1px solid #ffffff20}
+.saj-member-one-chat-thread{height:42vh;min-height:170px;overflow:auto;padding:10px 2px;display:flex;flex-direction:column;gap:4px}
+.saj-member-one-chat-thread .saj-chat-bubble{max-width:84%;display:table}
+.saj-member-one-chat-thread .saj-chat-admin{align-self:flex-end}.saj-member-one-chat-thread .saj-chat-received{align-self:flex-start}
+.saj-admin-chat-people{display:flex;gap:10px;overflow-x:auto;padding:8px 2px}
+.saj-admin-person{flex:0 0 62px;display:flex;flex-direction:column;align-items:center;gap:5px;background:transparent;border:0;color:#eaffef}
+.saj-admin-member-avatar{width:48px;height:48px;object-fit:cover;border-radius:50%;border:2px solid #c9a95c}
+.saj-admin-member-initial{display:grid;place-items:center;background:#15543a;color:white;font-weight:800}
+.saj-admin-person.active .saj-admin-member-avatar{outline:3px solid #31b879;outline-offset:2px}
+.saj-admin-person small{max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.saj-admin-chat-window{border:1px solid #b99b55;border-radius:18px;background:#092319;padding:10px}
+.saj-admin-chat-thread{height:42vh;min-height:170px;overflow:auto;padding:8px;display:flex;flex-direction:column}
+.saj-admin-chat-title{display:flex;align-items:center;gap:10px;color:#f4e2b4}
+.saj-chat-more{margin-left:auto;position:relative}.saj-chat-more summary{font-size:24px;cursor:pointer;list-style:none}
+.saj-chat-more>div{position:absolute;right:0;z-index:4;background:#123d2b;border:1px solid #c9a95c;padding:8px}
+.saj-chat-more button{background:transparent;color:white;border:0}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo" role="button" tabindex="0" title="Admin access" aria-label="Admin access" onclick="openAdminLogin()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin()}">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()" hidden>Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
@@ -1160,12 +1178,15 @@ async function loadMemberInbox(){
  return {messages,replies};
 }
 function renderMemberInbox(inbox){
- const host=document.getElementById('memberInboxList');if(!host)return;
- const messages=Array.isArray(inbox)?inbox:(inbox.messages||[]),replies=Array.isArray(inbox)?[]:(inbox.replies||[]);
- host.innerHTML=messages.length?messages.map(m=>{
-  const thread=replies.filter(r=>r.message_id===m.id).map(r=>'<div style="border-left:3px solid #d49a35;padding:8px 10px;margin:8px 0;background:#174b37;border-radius:8px"><b>'+(r.sender_role==='admin'?'Admin ka jawab':'Aapka jawab')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(r.body)+'</p><small class="muted">'+new Date(r.created_at).toLocaleString('en-IN')+'</small></div>').join('');
-  return '<article class="panel saj-message-card" style="margin:10px 0;background:#123b2b;color:#e9fff1;border:1px solid #b99b55"><div class="panelhead"><b>'+esc(m.title)+'</b><span class="pill">Padha gaya</span></div><div class="muted">'+({notice:'📢 Suchana',offer:'🎁 Special Offer',congratulation:'🏆 Badhai',personal:'💌 Personal Message'}[m.message_type]||'Message')+' • '+new Date(m.created_at).toLocaleString('en-IN')+'</div><div class="saj-chat-bubble saj-chat-received">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+'</small></div><div class="saj-reply-thread">'+thread+'</div><form class="saj-chat-compose" onsubmit="return false"><textarea name="body" required maxlength="4000" rows="2" placeholder="Apna jawab likhein..."></textarea><button class="saj-chat-send" type="button" onclick="sendMemberMessageReply(event,'+JSON.stringify(m.id)+',this)" aria-label="Jawab bhejein">➤</button></form></article>';
- }).join(''):'<div class="muted">Abhi koi naya message nahi hai.</div>';
+ const host=document.getElementById('memberInboxList');if(!host)return;const messages=Array.isArray(inbox)?inbox:(inbox.messages||[]),replies=Array.isArray(inbox)?[]:(inbox.replies||[]),rows=[];
+ messages.forEach(m=>{rows.push({who:'Admin',role:'received',body:m.body,time:m.created_at,id:m.id});replies.filter(x=>x.message_id===m.id).forEach(x=>rows.push({who:x.sender_role==='admin'?'Admin':'Aap',role:x.sender_role==='admin'?'received':'sent',body:x.body,time:x.created_at,id:m.id}))});rows.sort((x,y)=>new Date(x.time)-new Date(y.time));
+ const html=rows.map(x=>'<div class="saj-chat-bubble '+(x.role==='sent'?'saj-chat-admin':'saj-chat-received')+'"><b>'+x.who+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(x.body)+'</p><small>'+new Date(x.time).toLocaleString('en-IN')+'</small></div>').join('');
+ host.innerHTML='<section class="saj-member-one-chat"><div class="saj-member-one-chat-head"><b>🤝 Admin ke saath baatcheet</b><span>Private</span></div><div class="saj-member-one-chat-thread">'+(html||'<p class="muted">Abhi koi message nahi aaya.</p>')+'</div><form class="saj-chat-compose" onsubmit="sendMemberConversationMessage(event)"><textarea name="body" required maxlength="4000" rows="1" placeholder="Message likhein..."></textarea><button class="saj-chat-send" type="submit">➤</button></form></section>';
+ const t=host.querySelector('.saj-member-one-chat-thread');if(t)t.scrollTop=t.scrollHeight;
+}
+async function sendMemberConversationMessage(ev){
+ ev.preventDefault();const f=ev.target,body=String(new FormData(f).get('body')||'').trim();if(!body)return;const b=f.querySelector('button');if(b){b.disabled=true;b.textContent='…'}
+ try{const inbox=await loadMemberInbox(),msgs=inbox.messages||[];if(msgs.length){const m=msgs.slice().sort((x,y)=>new Date(y.created_at)-new Date(x.created_at))[0];const {error}=await getMemberSupabaseClient().rpc('member_send_message_reply_v2',{p_message_id:m.id,p_body:body});if(error)throw error}else{const {error}=await getMemberSupabaseClient().rpc('member_send_message_v2',{p_body:body,p_title:'Member ka message'});if(error)throw error}f.reset();await refreshMemberInbox()}catch(e){alert('Message nahi bheja gaya: '+(e.message||'Error'))}finally{if(b){b.disabled=false;b.textContent='➤'}}
 }
 async function sendAdminMessageReply(ev,messageId,button){
  if(ev){ev.preventDefault();ev.stopPropagation()}
