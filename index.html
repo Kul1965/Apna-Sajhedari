@@ -1187,7 +1187,7 @@ function openWorkerPasswordLogin(){
 }
 async function workerPasswordSignIn(ev){
  ev.preventDefault();const f=new FormData(ev.target),phone=String(f.get('phone')||'').trim(),password=String(f.get('password')||''),msg=document.getElementById('workerPasswordLoginMessage'),btn=document.getElementById('workerPasswordLoginBtn');
- if(!/^\\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath mobile number likhein.';return}
+ if(!/^\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath mobile number likhein.';return}
  btn.disabled=true;btn.textContent='Checking...';msg.textContent='Worker account check ho raha hai...';
  try{
   const client=getWorkerSupabaseClient(),{data,error}=await client.auth.signInWithPassword({phone,password});if(error)throw error;
