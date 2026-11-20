@@ -590,20 +590,27 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 }
 #adminMemberMessages .saj-admin-person{
   display:flex!important;
-  flex:0 0 62px!important;
-  width:62px!important;
-  min-width:62px!important;
-  max-width:62px!important;
+  flex:0 0 84px!important;
+  width:84px!important;
+  min-width:84px!important;
+  max-width:84px!important;
   flex-direction:column!important;
   align-items:center!important;
 }
 #adminMemberMessages .saj-admin-person small{
-  display:block!important;
-  width:62px!important;
-  max-width:62px!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  width:84px!important;
+  max-width:84px!important;
+  min-height:28px!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:normal!important;
+  font-size:13px!important;
+  line-height:1.15!important;
+  font-weight:700!important;
 }
 #adminWorkerMessagesPanel{margin:0 0 10px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
 #adminWorkerMessagesPanel:before{display:none!important}
@@ -1395,11 +1402,11 @@ let selectedAdminChatMemberId='';
 async function loadAdminMemberMessages(){
  const host=document.getElementById('adminMemberMessages');if(!signedInAdmin){if(host)host.textContent='Admin Login zaroori hai.';return}host.textContent='Loading...';
  try{
- const c=getSupabaseClient(),[{data:ms,error:e},{data:rs,error:re},{data:db,error:de}]=await Promise.all([c.rpc('admin_get_member_messages_v2'),c.rpc('admin_get_member_replies_v2'),c.from('members').select('id,full_name,auth_user_id').order('full_name')]);if(e)throw e;if(re)throw re;if(de)throw de;
+ const c=getSupabaseClient(),[{data:ms,error:e},{data:rs,error:re},{data:db,error:de},{data:workerAccounts,error:we}]=await Promise.all([c.rpc('admin_get_member_messages_v2'),c.rpc('admin_get_member_replies_v2'),c.from('members').select('id,full_name,auth_user_id').order('full_name'),c.from('worker_accounts').select('display_name,active').eq('active',true)]);if(e)throw e;if(re)throw re;if(de)throw de;if(we)throw we;
  const {data:adminAuth}=await c.auth.getUser(),adminUserId=adminAuth?.user?.id||'',adminPhoto=data.adminPhoto||adminAuth?.user?.user_metadata?.avatar_url||adminAuth?.user?.user_metadata?.picture||'',adminDisplayName=String(data.adminName||signedInAdmin?.display_name||'Admin');
  const local=data.members||[],members=(db||[]).map(m=>({...m,name:m.full_name||'Member',photo:(local.find(x=>String(x.id)===String(m.id))||{}).photo||''}));if(!selectedAdminChatMemberId)selectedAdminChatMemberId=(members[0]||{}).id||'';
  const photo=m=>m.photo?'<img class="saj-admin-member-avatar" src="'+esc(m.photo)+'">':'<span class="saj-admin-member-avatar saj-admin-member-initial">'+esc((m.name||'?')[0].toUpperCase())+'</span>';
- const picker='<div class="saj-admin-chat-people">'+members.map(m=>{const login=!!m.auth_user_id,dotColor=login?'#70f0a0':'#e2a33b';return '<button class="saj-admin-person '+(String(m.id)===String(selectedAdminChatMemberId)?'active':'')+'" data-member-chat-id="'+esc(String(m.id))+'">'+photo(m)+'<small style="display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;font-size:12px;font-weight:700"><i aria-label="'+(login?'Login active':'Login not linked')+'" title="'+(login?'Login bana hua hai':'Login nahi bana hai')+'" style="display:inline-block;flex:0 0 14px;width:14px;height:14px;min-width:14px;border-radius:50%;background:'+dotColor+';border:1px solid '+(login?'#b9ffd3':'#ffe0a3')+';box-shadow:0 0 0 3px '+(login?'#70f0a066':'#e2a33b66')+',0 0 11px '+dotColor+'"></i>'+esc(m.name.split(/\s+/)[0])+'</small></button>'}).join('')+'</div>';
+ const workerLoginNames=new Set((workerAccounts||[]).map(a=>String(a.display_name||'').trim().toLocaleLowerCase()).filter(Boolean));const picker='<div class="saj-admin-chat-people">'+members.map(m=>{const login=!!m.auth_user_id||workerLoginNames.has(String(m.name||'').trim().toLocaleLowerCase()),dotColor=login?'#70f0a0':'#e2a33b';return '<button class="saj-admin-person '+(String(m.id)===String(selectedAdminChatMemberId)?'active':'')+'" data-member-chat-id="'+esc(String(m.id))+'">'+photo(m)+'<small style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:normal;overflow:visible;text-overflow:clip;font-size:13px;line-height:1.15;font-weight:700;min-height:28px"><i aria-label="'+(login?'Login active':'Login not linked')+'" title="'+(login?'Login bana hua hai':'Login nahi bana hai')+'" style="display:inline-block;flex:0 0 14px;width:14px;height:14px;min-width:14px;border-radius:50%;background:'+dotColor+';border:1px solid '+(login?'#b9ffd3':'#ffe0a3')+';box-shadow:0 0 0 3px '+(login?'#70f0a066':'#e2a33b66')+',0 0 11px '+dotColor+'"></i>'+esc(m.name.split(/\s+/)[0])+'</small></button>'}).join('')+'</div>';
  const m=members.find(x=>String(x.id)===String(selectedAdminChatMemberId));if(!m){host.innerHTML=picker+'<p>Koi member nahi mila.</p>';return}
  const authIds=new Set([m.auth_user_id]),msgs=(ms||[]).filter(x=>x.target_member_id===m.id||authIds.has(x.created_by)).sort((x,y)=>new Date(x.created_at)-new Date(y.created_at)),mids=new Set(msgs.map(x=>x.id)),reps=(rs||[]).filter(x=>mids.has(x.message_id));
  let rows=[];msgs.forEach(x=>{const fromAdmin=String(x.created_by)===String(adminUserId);rows.push({who:fromAdmin?adminDisplayName:m.name,senderPhoto:fromAdmin?adminPhoto:m.photo,sent:fromAdmin,body:x.body,time:x.created_at,id:x.id,attachment_path:x.attachment_path||''});reps.filter(y=>y.message_id===x.id).forEach(y=>rows.push({who:y.sender_role==='admin'?adminDisplayName:m.name,senderPhoto:y.sender_role==='admin'?adminPhoto:m.photo,sent:y.sender_role==='admin',body:y.body,time:y.created_at,id:x.id,attachment_path:y.attachment_path||''}))});rows.sort((x,y)=>new Date(x.time)-new Date(y.time));
