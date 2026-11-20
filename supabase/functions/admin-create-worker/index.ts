@@ -40,12 +40,6 @@ Deno.serve(async (req) => {
       if (stateError) return reply({ error: "Admin cloud data read nahi hua: " + stateError.message }, 500);
       if (!state?.data) return reply({ error: "Admin ka cloud backup nahi mila. Pehle app sync/backup karein." }, 404);
       d = state.data;
-    } else {
-      const { error: saveError } = await admin.from("app_state").upsert({
-        user_id: authData.user.id, data: d, updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-      if (saveError) return reply({ error: "Admin ka latest data Cloud mein save nahi hua: " + saveError.message }, 500);
-    }
     const worker = workerType === "farm" || workerType === "staff"
       ? (Array.isArray(d.staffWorkers) ? d.staffWorkers : []).find((x: any) => String(x.id) === workerId)
       : (Array.isArray(d.tempo?.workers) ? d.tempo.workers : []).find((x: any) => String(x.id) === workerId);
