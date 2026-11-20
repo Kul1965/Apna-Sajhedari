@@ -572,26 +572,41 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 .saj-chat-more button{background:transparent;color:white;border:0}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script><style>html.member-session-pending #appRoot{display:none!important}
 
-/* Admin chat: show every active member, including newly joined members, without horizontal clipping */
+/* One compact horizontal photo strip for Members and Staff */
 #adminMemberMessages .saj-admin-chat-people{
-  display:grid!important;
-  grid-template-columns:repeat(auto-fit,minmax(62px,1fr))!important;
-  justify-items:center!important;
-  align-items:start!important;
-  gap:12px 8px!important;
+  display:flex!important;
+  flex-flow:row nowrap!important;
+  justify-content:flex-start!important;
+  align-items:flex-start!important;
+  gap:10px!important;
   width:100%!important;
-  overflow:visible!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  -webkit-overflow-scrolling:touch!important;
+  white-space:nowrap!important;
   padding:10px 4px 14px!important;
+  scrollbar-width:thin;
 }
 #adminMemberMessages .saj-admin-person{
-  width:100%!important;
-  min-width:0!important;
-  max-width:88px!important;
-  flex:none!important;
+  display:flex!important;
+  flex:0 0 62px!important;
+  width:62px!important;
+  min-width:62px!important;
+  max-width:62px!important;
+  flex-direction:column!important;
+  align-items:center!important;
 }
 #adminMemberMessages .saj-admin-person small{
-  max-width:100%!important;
+  display:block!important;
+  width:62px!important;
+  max-width:62px!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
 }
+#adminWorkerMessagesPanel{margin:0 0 10px!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#adminWorkerMessagesPanel:before{display:none!important}
 
 /* Installed Android app: force the main navigation to the device viewport bottom */
 @media(max-width:1024px){
