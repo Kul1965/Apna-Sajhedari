@@ -1207,7 +1207,7 @@ let selectedAdminChatMemberId='';
 async function loadAdminMemberMessages(){
  const host=document.getElementById('adminMemberMessages');if(!signedInAdmin){if(host)host.textContent='Admin Login zaroori hai.';return}host.textContent='Loading...';
  try{
- const c=getSupabaseClient(),[{data:ms,error:e},{data:rs,error:re},{data:db,error:de}]=await Promise.all([c.rpc('admin_get_member_messages_v2'),c.rpc('admin_get_member_replies_v2'),c.from('members').select('id,full_name,auth_user_id').eq('active',true).order('full_name')]);if(e)throw e;if(re)throw re;if(de)throw de;
+ const c=getSupabaseClient(),[{data:ms,error:e},{data:rs,error:re},{data:db,error:de}]=await Promise.all([c.rpc('admin_get_member_messages_v2'),c.rpc('admin_get_member_replies_v2'),c.from('members').select('id,full_name,auth_user_id').order('full_name')]);if(e)throw e;if(re)throw re;if(de)throw de;
  const {data:adminAuth}=await c.auth.getUser(),adminUserId=adminAuth?.user?.id||'',adminPhoto=data.adminPhoto||adminAuth?.user?.user_metadata?.avatar_url||adminAuth?.user?.user_metadata?.picture||'',adminDisplayName=String(data.adminName||signedInAdmin?.display_name||'Admin');
  const local=data.members||[],members=(db||[]).map(m=>({...m,name:m.full_name||'Member',photo:(local.find(x=>String(x.id)===String(m.id))||{}).photo||''}));if(!selectedAdminChatMemberId)selectedAdminChatMemberId=(members[0]||{}).id||'';
  const photo=m=>m.photo?'<img class="saj-admin-member-avatar" src="'+esc(m.photo)+'">':'<span class="saj-admin-member-avatar saj-admin-member-initial">'+esc((m.name||'?')[0].toUpperCase())+'</span>';
