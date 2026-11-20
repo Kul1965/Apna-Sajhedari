@@ -1209,9 +1209,6 @@ async function createStaffOrTempoLogin(workerType,workerId){
   if(sessionError)throw sessionError;
   const accessToken=sessionData?.session?.access_token;
   if(!accessToken)throw new Error('Admin ka Supabase login session nahi mila. Admin Login se dobara login karein.');
-  // Save this exact Admin's latest staff record immediately before the Edge Function looks it up.
-  // This prevents a stale/missing app_state backup from blocking worker login creation.
-  await cloudWrite(JSON.parse(JSON.stringify(data)));
   const response=await fetch(SUPABASE_URL+'/functions/v1/admin-create-worker',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+accessToken},body:JSON.stringify({worker_type:workerType,worker_id:workerId,password,admin_data:JSON.parse(JSON.stringify(data))})});
   const result=await response.json().catch(()=>({}));
   if(!response.ok||result?.error)throw new Error(result.error||result.message||('Supabase ne request rok di (HTTP '+response.status+').'));
