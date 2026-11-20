@@ -648,7 +648,7 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 }
 </style><script>(function(){try{if(localStorage.getItem('apna-sajhedari-member-mode')==='1')document.documentElement.classList.add('member-session-pending')}catch(e){}})();</script></head>
 <body><div class="app" id="appRoot">
-<header class="top"><div class="brand"><div class="logo" role="button" tabindex="0" title="Admin access" aria-label="Admin access" onclick="openAdminLogin()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin()}">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
+<header class="top"><div class="brand"><div class="logo" role="button" tabindex="0" title="Admin access" aria-label="Admin access" onclick="openAdminLogin()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin()}">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="workerLoginBtn" class="btn light small" type="button" onclick="openWorkerPasswordLogin()">Worker Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
 <div class="wrap"><div class="notice" id="cloudSyncNotice">🟡 <b>Cloud setup baaki:</b> Aapka purana hisaab is device par surakshit hai. Supabase Cloud Sync setup poora hone tak isi device par kaam karein.</div>
 <div class="layout"><aside class="side" id="sideNav"></aside><main class="main">
 <section id="dashboard" class="page"><div class="heading"><div><h2>Namaste, Admin 👋</h2><div class="sub">Aapke saajhe business ka poora hisaab</div></div><div class="actions"><button class="btn light small" onclick="printDashboard()">📄 Dashboard PDF</button><button class="btn light small" onclick="showPage('assets')">🏗️ Investment Details</button><button class="btn" onclick="openEntry()">＋ Kamai / Kharcha likhein</button></div></div>
@@ -1154,6 +1154,57 @@ async function createStaffOrTempoLogin(workerType,workerId){
   if(!response.ok||result?.error)throw new Error(result.error||result.message||('Supabase ne request rok di (HTTP '+response.status+').'));
   alert((isTempo?'Tempo':'Staff')+' Login taiyar hai.\nNaam: '+(result.worker_name||worker.name)+'\nMobile: '+(result.phone||phone)+'\n'+(result.message||'Temporary password Worker ko surakshit tareeke se dein.'));
  }catch(err){console.error('Worker login creation failed:',err);alert('Login nahi bana: '+(err.message||'Error'))}
+}
+
+
+let workerSupabaseClient=null, workerPortalData=null;
+function getWorkerSupabaseClient(){
+ if(!window.supabase||!window.supabase.createClient)throw new Error('Supabase library load nahi hui. Internet check karein.');
+ if(!workerSupabaseClient)workerSupabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{storageKey:'apna-sajhedari-worker-auth-v1',persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+ return workerSupabaseClient;
+}
+function openWorkerPasswordLogin(){
+ openModal('Worker Login — Password','<p class="muted">Apna registered mobile number country code ke saath aur password daalein.</p><form onsubmit="workerPasswordSignIn(event)"><div class="field"><label>Registered Mobile *</label><input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+91XXXXXXXXXX"></div><div class="field"><label>Password *</label><input name="password" type="password" autocomplete="current-password" required></div><div id="workerPasswordLoginMessage" class="muted" style="font-size:12px;margin:8px 0"></div><div class="actions"><button type="button" class="btn light" onclick="closeModal()">Cancel</button><button id="workerPasswordLoginBtn" class="btn">Login</button></div></form><p class="muted" style="font-size:12px">Yeh Farm Staff aur Tempo Driver/Helper ke liye hai. Tempo investors ke liye alag Member Login hoga.</p>');
+}
+async function workerPasswordSignIn(ev){
+ ev.preventDefault();const f=new FormData(ev.target),phone=String(f.get('phone')||'').trim(),password=String(f.get('password')||''),msg=document.getElementById('workerPasswordLoginMessage'),btn=document.getElementById('workerPasswordLoginBtn');
+ if(!/^\\+[1-9][0-9]{7,14}$/.test(phone)){msg.textContent='Country code ke saath mobile number likhein.';return}
+ btn.disabled=true;btn.textContent='Checking...';msg.textContent='Worker account check ho raha hai...';
+ try{
+  const client=getWorkerSupabaseClient(),{data,error}=await client.auth.signInWithPassword({phone,password});if(error)throw error;
+  const {data:statement,error:statementError}=await client.rpc('get_my_worker_statements');if(statementError)throw statementError;
+  if(!Array.isArray(statement)||!statement.length)throw new Error('Is login se koi active Worker record link nahi hai.');
+  workerPortalData=statement;closeModal();showWorkerStatementPortal(statement);
+ }catch(err){msg.textContent=err.message||'Login nahi hua.';try{await getWorkerSupabaseClient().auth.signOut()}catch(e){}btn.disabled=false;btn.textContent='Login'}
+}
+function showWorkerStatementPortal(accounts){
+ try{localStorage.setItem('apna-sajhedari-worker-mode','1')}catch(e){}
+ document.getElementById('memberStatementPortal')?.remove();document.getElementById('memberSignedOutScreen')?.remove();
+ const app=document.getElementById('appRoot');if(app)app.style.display='none';
+ let host=document.getElementById('workerStatementPortal');if(!host){host=document.createElement('main');host.id='workerStatementPortal';document.body.appendChild(host)}
+ const list=Array.isArray(accounts)?accounts:[],a=list[0]||{},w=a.worker||{},name=a.name||a.display_name||w.name||'Worker',type=a.worker_type==='tempo'?'Tempo Driver / Helper':'Farm Staff';
+ const duties=Array.isArray(a.duties)?a.duties:[],payments=Array.isArray(a.payments)?a.payments:[];
+ const earned=duties.reduce((n,x)=>n+Number(x.amount||0),0),paid=payments.reduce((n,x)=>n+Number(x.amount||0),0),due=earned-paid;
+ const rows=duties.slice().sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).map(x=>'<tr><td>'+esc(x.date||'—')+'</td><td>'+esc(x.workerName||x.name||'Duty')+'</td><td>'+Number(x.hours||0).toFixed(2)+'</td><td>'+money(x.amount||0)+'</td></tr>').join('')||'<tr><td colspan="4" class="empty">Abhi duty record nahi hai.</td></tr>';
+ const payRows=payments.slice().sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))).map(x=>'<tr><td>'+esc(x.date||'—')+'</td><td>'+esc(x.kind||x.note||'Payment')+'</td><td>'+money(x.amount||0)+'</td></tr>').join('')||'<tr><td colspan="3" class="empty">Abhi payment record nahi hai.</td></tr>';
+ host.innerHTML='<style>#workerStatementPortal{min-height:100vh;background:radial-gradient(ellipse at 50% 0,#174a35,#071712 62%);color:#e8f5ed;padding:0 0 28px;font:15px/1.45 system-ui}#workerStatementPortal .whead{background:linear-gradient(115deg,#052e22,#08734e);border-bottom:1px solid #d49a35;padding:14px max(14px,calc((100vw - 900px)/2));display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}#workerStatementPortal .wmain{max-width:900px;margin:auto;padding:18px 12px}#workerStatementPortal .wcard{background:linear-gradient(145deg,#1b3b2c,#10271d);border:1px solid #47765b;border-radius:14px;padding:14px;margin:0 0 12px;box-shadow:0 8px 18px #0005}#workerStatementPortal .wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}#workerStatementPortal .wstats strong{display:block;font-size:19px;margin-top:5px}#workerStatementPortal .wmuted{color:#a1b8aa;font-size:12px}#workerStatementPortal table{min-width:480px}#workerStatementPortal th,#workerStatementPortal td{color:#e8f5ed;border-color:#315342}#workerStatementPortal .btn{margin:2px}@media(max-width:560px){#workerStatementPortal .wstats{grid-template-columns:1fr 1fr}#workerStatementPortal .whead{padding:12px}}</style><header class="whead"><div><b style="color:#fff;font-size:17px">Apna Sajhedari</b><div class="wmuted" style="color:#d7eddf">Private Worker Account</div></div><div><button class="btn light small" onclick="changeWorkerOwnPassword()">🔑 Password</button><button class="btn light small" onclick="closeWorkerStatementPortal()">Logout</button></div></header><section class="wmain"><div class="wcard"><div style="color:#f4c15e;font-size:11px;font-weight:800">YOUR PERSONAL ACCOUNT</div><h2 style="margin:4px 0 8px">Namaste, '+esc(name)+'</h2><div class="wmuted">'+esc(type)+' · '+esc(a.mobile||'')+'</div><div class="wmuted">Kaam: '+esc(w.work||w.role||type)+'</div></div><div class="wstats"><div class="wcard"><div class="wmuted">Kul kamai</div><strong>'+money(earned)+'</strong></div><div class="wcard"><div class="wmuted">Diya gaya</div><strong>'+money(paid)+'</strong></div><div class="wcard"><div class="wmuted">Baki / advance</div><strong>'+money(due)+'</strong></div></div><div class="wcard"><h3 style="margin:0 0 10px">Duty History</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Kaam</th><th>Ghante</th><th>Majdoori</th></tr></thead><tbody>'+rows+'</tbody></table></div></div><div class="wcard"><h3 style="margin:0 0 10px">Payment History</h3><div class="tablewrap"><table><thead><tr><th>Date</th><th>Details</th><th>Rakam</th></tr></thead><tbody>'+payRows+'</tbody></table></div></div><p class="wmuted" style="text-align:center">Yahan sirf aapka apna Worker hisaab dikhaya jata hai.</p></section>';
+ host.style.display='block';
+}
+async function changeWorkerOwnPassword(){
+ const password=prompt('Naya password likhein (kam se kam 8 characters):');if(password===null)return;if(password.length<8){alert('Password kam se kam 8 characters ka hona chahiye.');return}
+ const again=prompt('Naya password dobara likhein:');if(again===null)return;if(password!==again){alert('Dono password alag hain.');return}
+ try{const {error}=await getWorkerSupabaseClient().auth.updateUser({password});if(error)throw error;alert('Password badal gaya.');}catch(err){alert('Password nahi badla: '+(err.message||'Error'))}
+}
+async function closeWorkerStatementPortal(){
+ try{await getWorkerSupabaseClient().auth.signOut()}catch(e){}
+ workerPortalData=null;try{localStorage.removeItem('apna-sajhedari-worker-mode')}catch(e){}
+ document.getElementById('workerStatementPortal')?.remove();const app=document.getElementById('appRoot');if(app)app.style.display='block';
+}
+async function restoreWorkerPortalSession(){
+ let mode=false;try{mode=localStorage.getItem('apna-sajhedari-worker-mode')==='1'}catch(e){}
+ try{const client=getWorkerSupabaseClient(),{data,error}=await client.auth.getSession();if(error)throw error;if(!data.session){if(mode){const app=document.getElementById('appRoot');if(app)app.style.display='none';openWorkerPasswordLogin()}return}
+ const {data:statement,error:statementError}=await client.rpc('get_my_worker_statements');if(statementError)throw statementError;if(!Array.isArray(statement)||!statement.length)throw new Error('Worker statement nahi mila.');workerPortalData=statement;showWorkerStatementPortal(statement);
+ }catch(err){console.warn('Worker session restore:',err);if(mode){try{await getWorkerSupabaseClient().auth.signOut()}catch(e){}try{localStorage.removeItem('apna-sajhedari-worker-mode')}catch(e){}alert('Worker account load nahi hua: '+(err.message||'Error'));}}
 }
 
 async function provisionMemberLogin(memberId){
@@ -1734,6 +1785,7 @@ if(dataLoadProblem){
   }
 }
 restoreSupabaseAdminSession();
+restoreWorkerPortalSession();
 restoreMemberPortalSession();
 
 let cloudSyncReady=false, cloudSyncQueue=Promise.resolve(), cloudSyncErrorShown=false;
