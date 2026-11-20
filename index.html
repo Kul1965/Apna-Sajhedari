@@ -1413,15 +1413,23 @@ async function loadAdminMemberMessages(){
 async function loadAdminWorkerMessages(host){
  try{
   const client=getSupabaseClient();
-  const {data:accountsData,error}=await client.rpc('admin_get_worker_messages_v1');
-  if(error)throw error;
-  const accounts=Array.isArray(accountsData)?accountsData:[];
+  let accounts=[];
+  const rpcResult=await client.rpc('admin_get_worker_messages_v1');
+  if(!rpcResult.error&&Array.isArray(rpcResult.data)){
+   accounts=rpcResult.data;
+  }else{
+   // Fallback: still show local Farm/Tempo staff if the messaging RPC is unavailable.
+   const fallback=await client.from('worker_accounts').select('id,worker_id,worker_type,display_name,mobile,active').eq('active',true);
+   if(fallback.error)throw fallback.error;
+   accounts=(fallback.data||[]).map(a=>({...a,account_id:a.id,messages:[]}));
+  }
   const allStaff=[
    ...(Array.isArray(data.staffWorkers)?data.staffWorkers.map(w=>({worker_id:String(w.id),worker_type:'staff',display_name:w.name||'Farm Staff',local:w})):[]),
    ...(Array.isArray(data.tempo?.workers)?data.tempo.workers.map(w=>({worker_id:String(w.id),worker_type:'tempo',display_name:w.name||'Tempo Staff',local:w})):[])
   ];
-  const byKey=new Map(accounts.map(a=>[String(a.worker_type)+'|'+String(a.worker_id),a]));
-  const staff=allStaff.map(w=>({...w,...(byKey.get(w.worker_type+'|'+w.worker_id)||{}),worker_id:w.worker_id,worker_type:w.worker_type,display_name:w.display_name||'Staff',local:w.local}));
+  const normalizeType=t=>(t==='farm'||t==='staff')?'staff':String(t);
+  const byKey=new Map(accounts.map(a=>[normalizeType(a.worker_type)+'|'+String(a.worker_id),a]));
+  const staff=allStaff.map(w=>({...w,...(byKey.get(normalizeType(w.worker_type)+'|'+w.worker_id)||{}),worker_id:w.worker_id,worker_type:w.worker_type,display_name:w.display_name||'Staff',local:w.local}));
   staff.sort((a,b)=>Number(!!b.account_id)-Number(!!a.account_id));
   const picker=host.querySelector('.saj-admin-chat-people');
   if(!picker)return;
