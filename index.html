@@ -571,6 +571,28 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 .saj-chat-more>div{position:absolute;right:0;z-index:4;background:#123d2b;border:1px solid #c9a95c;padding:8px}
 .saj-chat-more button{background:transparent;color:white;border:0}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script><style>html.member-session-pending #appRoot{display:none!important}
+
+/* Admin chat: show every active member, including newly joined members, without horizontal clipping */
+#adminMemberMessages .saj-admin-chat-people{
+  display:grid!important;
+  grid-template-columns:repeat(auto-fit,minmax(62px,1fr))!important;
+  justify-items:center!important;
+  align-items:start!important;
+  gap:12px 8px!important;
+  width:100%!important;
+  overflow:visible!important;
+  padding:10px 4px 14px!important;
+}
+#adminMemberMessages .saj-admin-person{
+  width:100%!important;
+  min-width:0!important;
+  max-width:88px!important;
+  flex:none!important;
+}
+#adminMemberMessages .saj-admin-person small{
+  max-width:100%!important;
+}
+
 /* Installed Android app: force the main navigation to the device viewport bottom */
 @media(max-width:1024px){
   html,body{min-height:100%;overflow-x:hidden}
