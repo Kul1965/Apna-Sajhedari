@@ -4,7 +4,7 @@
 create table if not exists public.worker_accounts (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid not null references auth.users(id) on delete cascade,
-  worker_type text not null check (worker_type in ('farm','tempo')),
+  worker_type text not null check (worker_type in ('farm','staff','tempo')),
   worker_id text not null,
   display_name text not null,
   mobile text,
@@ -13,6 +13,9 @@ create table if not exists public.worker_accounts (
   unique(worker_type, worker_id),
   unique(auth_user_id, worker_type, worker_id)
 );
+
+alter table public.worker_accounts drop constraint if exists worker_accounts_worker_type_check;
+alter table public.worker_accounts add constraint worker_accounts_worker_type_check check (worker_type in ('farm','staff','tempo'));
 
 alter table public.worker_accounts enable row level security;
 drop policy if exists "worker reads own account or admin reads all" on public.worker_accounts;
@@ -54,7 +57,7 @@ begin
     'worker_id', wa.worker_id,
     'name', wa.display_name,
     'mobile', wa.mobile,
-    'worker', case when wa.worker_type = 'farm'
+    'worker', case when wa.worker_type in ('farm','staff')
       then (select x from jsonb_array_elements(coalesce(v_state->'staffWorkers','[]'::jsonb)) x where x->>'id'=wa.worker_id limit 1)
       else (select x from jsonb_array_elements(coalesce(v_state->'tempo'->'workers','[]'::jsonb)) x where x->>'id'=wa.worker_id limit 1)
     end,
