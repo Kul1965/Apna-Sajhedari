@@ -1377,15 +1377,21 @@ async function loadAdminMemberMessages(){
 }
 async function loadAdminWorkerMessages(host){
  try{
-  const c=getSupabaseClient(),{data,error}=await c.rpc('admin_get_worker_messages_v1');if(error)throw error;
-  const accounts=Array.isArray(data)?data:[];
+  const client=getSupabaseClient(),{data:accountsData,error}=await client.rpc('admin_get_worker_messages_v1');if(error)throw error;
+  const accounts=Array.isArray(accountsData)?accountsData:[];
+  const allStaff=[
+   ...(Array.isArray(data.staffWorkers)?data.staffWorkers.map(w=>({worker_id:String(w.id),worker_type:'farm',display_name:w.name||'Farm Staff'})):[]),
+   ...(Array.isArray(data.tempo?.workers)?data.tempo.workers.map(w=>({worker_id:String(w.id),worker_type:'tempo',display_name:w.name||'Tempo Staff'})):[])
+  ];
+  const byKey=new Map(accounts.map(a=>[String(a.worker_type)+'|'+String(a.worker_id),a]));
+  const merged=allStaff.map(w=>({...w,...(byKey.get(w.worker_type+'|'+w.worker_id)||{}),worker_id:w.worker_id,worker_type:w.worker_type,display_name:w.display_name||byKey.get(w.worker_type+'|'+w.worker_id)?.display_name||'Staff'}));
   let section=host.querySelector('#adminWorkerMessagesPanel');
   if(!section){section=document.createElement('section');section.id='adminWorkerMessagesPanel';section.className='panel';section.style.marginTop='16px';host.appendChild(section)}
-  section.innerHTML='<div class="panelhead"><h3>👷 Staff Messages (Farm / Tempo)</h3></div>'+ (accounts.length?accounts.map(a=>{
-   const typ=a.worker_type==='tempo'?'Tempo Staff':'Farm Staff';
-   const msgs=Array.isArray(a.messages)?a.messages:[];
-   return '<div style="border:1px solid #b8954b;border-radius:12px;padding:12px;margin:10px 0"><b>'+esc(a.display_name||'Staff')+'</b> <small>· '+typ+'</small><div style="max-height:220px;overflow:auto;margin:8px 0">'+(msgs.length?msgs.map(m=>'<div style="padding:7px;margin:5px 0;border-radius:8px;background:'+(m.sender_role==='admin'?'#173c2c':'#09251a')+'"><b>'+(m.sender_role==='admin'?'Admin':'Staff')+'</b><div style="white-space:pre-wrap">'+esc(m.body)+'</div><small>'+new Date(m.created_at).toLocaleString('en-IN')+'</small></div>').join(''):'<span class="muted">Abhi message nahi.</span>')+'</div><form onsubmit="sendAdminWorkerMessage(event,\''+esc(String(a.account_id))+'\')" style="display:flex;gap:8px"><input name="body" required maxlength="5000" placeholder="Staff ko reply likhein..." style="flex:1;min-width:0"><button class="btn small" type="submit">Reply</button></form></div>';
-  }).join(''):'<p class="muted">Abhi koi Staff Login account nahi bana hai.</p>');
+  section.innerHTML='<div class="panelhead"><h3>👷 Staff Messages (Farm / Tempo)</h3></div>'+ (merged.length?merged.map(a=>{
+   const typ=a.worker_type==='tempo'?'Tempo Staff':'Farm Staff',msgs=Array.isArray(a.messages)?a.messages:[];
+   const linked=!!a.account_id;
+   return '<div style="border:1px solid #b8954b;border-radius:12px;padding:12px;margin:10px 0"><b>'+esc(a.display_name||'Staff')+'</b> <small>· '+typ+'</small><div class="muted" style="font-size:12px">'+(linked?'Login connected':'Login banana baki hai')+'</div><div style="max-height:220px;overflow:auto;margin:8px 0">'+(msgs.length?msgs.map(m=>'<div style="padding:7px;margin:5px 0;border-radius:8px;background:'+(m.sender_role==='admin'?'#173c2c':'#09251a')+'"><b>'+(m.sender_role==='admin'?'Admin':'Staff')+'</b><div style="white-space:pre-wrap">'+esc(m.body)+'</div><small>'+new Date(m.created_at).toLocaleString('en-IN')+'</small></div>').join(''):'<span class="muted">Abhi message nahi.</span>')+'</div>'+(linked?'<form onsubmit="sendAdminWorkerMessage(event,\''+esc(String(a.account_id))+'\')" style="display:flex;gap:8px"><input name="body" required maxlength="5000" placeholder="Staff ko message / reply likhein..." style="flex:1;min-width:0"><button class="btn small" type="submit">Send / Reply</button></form>':'<small class="muted">Is Staff ka Login banne ke baad yahin se message aur reply shuru hoga.</small>')+'</div>';
+  }).join(''):'<p class="muted">Farm ya Tempo mein abhi Staff record nahi hai.</p>');
  }catch(e){const old=host.querySelector('#adminWorkerMessagesPanel');if(old)old.textContent='Staff Messages load nahi hue: '+(e.message||'Error');}
 }
 async function sendAdminWorkerMessage(ev,accountId){
