@@ -1417,7 +1417,7 @@ async function loadAdminWorkerMessages(host){
   if(error)throw error;
   const accounts=Array.isArray(accountsData)?accountsData:[];
   const allStaff=[
-   ...(Array.isArray(data.staffWorkers)?data.staffWorkers.map(w=>({worker_id:String(w.id),worker_type:'farm',display_name:w.name||'Farm Staff',local:w})):[]),
+   ...(Array.isArray(data.staffWorkers)?data.staffWorkers.map(w=>({worker_id:String(w.id),worker_type:'staff',display_name:w.name||'Farm Staff',local:w})):[]),
    ...(Array.isArray(data.tempo?.workers)?data.tempo.workers.map(w=>({worker_id:String(w.id),worker_type:'tempo',display_name:w.name||'Tempo Staff',local:w})):[])
   ];
   const byKey=new Map(accounts.map(a=>[String(a.worker_type)+'|'+String(a.worker_id),a]));
