@@ -1395,39 +1395,38 @@ async function loadAdminWorkerMessages(host){
   const client=getSupabaseClient(),{data:accountsData,error}=await client.rpc('admin_get_worker_messages_v1');if(error)throw error;
   const accounts=Array.isArray(accountsData)?accountsData:[];
   const allStaff=[
-   ...(Array.isArray(data.staffWorkers)?data.staffWorkers.map(w=>({worker_id:String(w.id),worker_type:'farm',display_name:w.name||'Farm Staff',local:w})):[]),
-   ...(Array.isArray(data.tempo?.workers)?data.tempo.workers.map(w=>({worker_id:String(w.id),worker_type:'tempo',display_name:w.name||'Tempo Staff',local:w})):[])
+   ...(Array.isArray(data.staffWorkers)?data.staffWorkers.map(w=>({worker_id:String(w.id),worker_type:'farm',display_name:w.name||'Farm Staff'})):[]),
+   ...(Array.isArray(data.tempo?.workers)?data.tempo.workers.map(w=>({worker_id:String(w.id),worker_type:'tempo',display_name:w.name||'Tempo Staff'})):[])
   ];
   const byKey=new Map(accounts.map(a=>[String(a.worker_type)+'|'+String(a.worker_id),a]));
-  const merged=allStaff.map(w=>({...w,...(byKey.get(w.worker_type+'|'+w.worker_id)||{}),worker_id:w.worker_id,worker_type:w.worker_type,display_name:w.display_name||'Staff',local:w.local}));
+  const merged=allStaff.map(w=>({...w,...(byKey.get(w.worker_type+'|'+w.worker_id)||{}),worker_id:w.worker_id,worker_type:w.worker_type,display_name:w.display_name||byKey.get(w.worker_type+'|'+w.worker_id)?.display_name||'Staff'}));
+  let section=host.querySelector('#adminWorkerMessagesPanel');
+  if(!section){section=document.createElement('section');section.id='adminWorkerMessagesPanel';section.className='panel';section.style.marginTop='12px'}
   const ordered=merged.slice().sort((a,b)=>Number(!!b.account_id)-Number(!!a.account_id));
-  const selectedKey=window.selectedAdminWorkerKey||'';
-  const chosen=ordered.find(a=>a.worker_type+'|'+a.worker_id===selectedKey);
+  const selectedKey=window.selectedAdminWorkerKey||((ordered[0]||{}).worker_type+'|'+((ordered[0]||{}).worker_id||''));
+  window.selectedAdminWorkerKey=selectedKey;
+  const chosen=ordered.find(a=>a.worker_type+'|'+a.worker_id===selectedKey)||ordered[0];
   const memberPicker=host.querySelector('.saj-admin-chat-people');
   if(memberPicker){
    memberPicker.querySelectorAll('[data-staff-chat-key]').forEach(n=>n.remove());
    ordered.forEach(a=>{
     const key=a.worker_type+'|'+a.worker_id,linked=!!a.account_id;
-    const pic=a.photo||a.image||a.imageUrl||a.local?.photo||a.local?.image||'';
-    const btn=document.createElement('button');btn.type='button';btn.className='saj-admin-person'+(key===selectedKey?' active':'');btn.setAttribute('data-staff-chat-key',key);
-    btn.style.cssText='position:relative;flex:0 0 62px;width:62px;min-width:62px;display:flex;flex-direction:column;align-items:center;gap:5px;background:transparent;border:0;color:inherit;padding:2px 0';
-    btn.innerHTML='<span style="position:relative;display:block;flex:0 0 48px;width:48px;height:48px;min-width:48px;min-height:48px;box-sizing:border-box;border-radius:50%;overflow:hidden;border:2px solid #c9a95c;background:#15543a;color:white;font-size:20px;text-align:center;line-height:44px">'+(pic?'<img src="'+esc(pic)+'" style="position:absolute;inset:0;display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:cover;border-radius:50%">':(a.worker_type==='tempo'?'🚚':'👷'))+'<i style="position:absolute;right:0;bottom:0;width:12px;height:12px;border-radius:50%;background:'+(linked?'#20d879':'#d49a35')+';border:2px solid #0b2419;box-sizing:border-box;display:block"></i></span><small style="display:block;width:62px;max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-align:center">'+esc((a.display_name||'Staff').split(/\\s+/)[0])+'</small>';
+    const local=(a.worker_type==='tempo'?data.tempo?.workers:data.staffWorkers)||[],w=local.find(x=>String(x.id)===String(a.worker_id));
+    const pic=a.photo||a.image||a.imageUrl||w?.photo||w?.image||'';
+    const btn=document.createElement('button');btn.type='button';btn.className='saj-admin-person';btn.setAttribute('data-staff-chat-key',key);
+    btn.style.cssText='position:relative;flex:0 0 62px;width:62px;display:flex;flex-direction:column;align-items:center;gap:5px;background:transparent;border:0;color:inherit;padding:2px 0';
+    btn.innerHTML='<span style="position:relative;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;overflow:visible;border:2px solid #c9a95c;background:#15543a;color:white;font-size:20px">'+(pic?'<img src="'+esc(pic)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':(a.worker_type==='tempo'?'🚚':'👷'))+'<i style="position:absolute;right:1px;bottom:1px;width:12px;height:12px;border-radius:50%;background:'+(linked?'#20d879':'#d49a35')+';border:2px solid #0b2419;display:block"></i></span><small style="max-width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px">'+esc((a.display_name||'Staff').split(/\\s+/)[0])+'</small>';
     btn.onclick=()=>{window.selectedAdminWorkerKey=key;loadAdminMemberMessages()};
     memberPicker.appendChild(btn);
    });
   }
-  const oldPanel=host.querySelector('#adminWorkerMessagesPanel');if(oldPanel)oldPanel.remove();
-  if(chosen){
-   const win=host.querySelector('.saj-admin-chat-window');
-   if(win){
-    const msgs=Array.isArray(chosen.messages)?chosen.messages:[];
-    const linked=!!chosen.account_id;
-    win.innerHTML='<header class="saj-admin-chat-title"><b>'+esc(chosen.display_name||'Staff')+'</b><small class="muted"> · '+(chosen.worker_type==='tempo'?'Tempo':'Farm')+'</small><span style="margin-left:auto;color:'+(linked?'#20d879':'#d49a35')+'">'+(linked?'● Login active':'● Login nahi bana')+'</span></header><div class="saj-admin-chat-thread">'+(msgs.length?msgs.map(m=>'<div class="saj-chat-bubble '+(m.sender_role==='admin'?'saj-chat-admin':'saj-chat-received')+'"><b>'+(m.sender_role==='admin'?'Admin':'Staff')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(m.body)+'</p><small>'+new Date(m.created_at).toLocaleString('en-IN')+'</small></div>').join(''):'<p class="muted">Abhi message nahi. Neeche likhein.</p>')+'</div>'+(linked?'<form onsubmit="sendAdminWorkerMessage(event,\''+esc(String(chosen.account_id))+'\\')" class="saj-chat-compose"><input name="body" required maxlength="5000" placeholder="Message / Reply likhein..." style="flex:1;min-width:0"><button class="saj-chat-send">➤</button></form>':'<small class="muted">Login banne ke baad is Staff ko yahin se message bhej sakenge.</small>');
-   }
-  }else if(selectedKey){
-   window.selectedAdminWorkerKey='';
-  }
- }catch(e){console.error('Staff messages:',e);const old=host.querySelector('#adminWorkerMessagesPanel');if(old)old.remove();}
+  
+  const chosenMsgs=chosen&&Array.isArray(chosen.messages)?chosen.messages:[];
+  const linked=!!chosen?.account_id;
+  const detail=chosen?'<section class="saj-admin-chat-window" style="margin-top:8px"><header class="saj-admin-chat-title"><b>'+esc(chosen.display_name||'Staff')+'</b><small class="muted"> · '+(chosen.worker_type==='tempo'?'Tempo':'Farm')+'</small><span style="margin-left:auto;color:'+(linked?'#20d879':'#d49a35')+'">'+(linked?'● Login active':'● Login nahi bana')+'</span></header><div class="saj-admin-chat-thread" style="height:32vh;min-height:140px">'+(chosenMsgs.length?chosenMsgs.map(m=>'<div class="saj-chat-bubble '+(m.sender_role==='admin'?'saj-chat-admin':'saj-chat-received')+'"><b>'+(m.sender_role==='admin'?'Admin':'Staff')+'</b><p style="white-space:pre-wrap;margin:5px 0">'+esc(m.body)+'</p><small>'+new Date(m.created_at).toLocaleString('en-IN')+'</small></div>').join(''):'<p class="muted">Abhi message nahi. Neeche likhein.</p>')+'</div>'+(linked?'<form onsubmit="sendAdminWorkerMessage(event,\''+esc(String(chosen.account_id))+'\')" class="saj-chat-compose"><input name="body" required maxlength="5000" placeholder="Message / Reply likhein..." style="flex:1;min-width:0"><button class="saj-chat-send">➤</button></form>':'<small class="muted">Login banne ke baad is Staff ko yahin se message bhej sakenge.</small>')+'</section>':'<p class="muted">Farm ya Tempo mein abhi Staff record nahi hai.</p>';
+  section.innerHTML=detail;
+  host.insertBefore(section,host.firstChild);
+ }catch(e){const old=host.querySelector('#adminWorkerMessagesPanel');if(old)old.textContent='Staff Messages load nahi hue: '+(e.message||'Error');}
 }
 async function sendAdminWorkerMessage(ev,accountId){
  ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim();if(!body)return;
