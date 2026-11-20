@@ -1731,7 +1731,6 @@ async function prepareCloudSync(button){
   }
   cloudStage='save Cloud data on this device';
   data=row.data;
-  await syncMembersToSupabase(data);
   localStorage.setItem(KEY,JSON.stringify(data));
   render();
   cloudSyncReady=true;
