@@ -570,7 +570,35 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
 .saj-chat-more{margin-left:auto;position:relative}.saj-chat-more summary{font-size:24px;cursor:pointer;list-style:none}
 .saj-chat-more>div{position:absolute;right:0;z-index:4;background:#123d2b;border:1px solid #c9a95c;padding:8px}
 .saj-chat-more button{background:transparent;color:white;border:0}
-</style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script><style>html.member-session-pending #appRoot{display:none!important}</style><script>(function(){try{if(localStorage.getItem('apna-sajhedari-member-mode')==='1')document.documentElement.classList.add('member-session-pending')}catch(e){}})();</script></head>
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script><style>html.member-session-pending #appRoot{display:none!important}
+/* Installed Android app: force the main navigation to the device viewport bottom */
+@media(max-width:1024px){
+  html,body{min-height:100%;overflow-x:hidden}
+  #appRoot{
+    transform:none!important;
+    filter:none!important;
+    perspective:none!important;
+    contain:none!important;
+  }
+  #bottomNav{
+    display:flex!important;
+    position:fixed!important;
+    top:auto!important;
+    right:0!important;
+    bottom:0!important;
+    left:0!important;
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    z-index:2147483000!important;
+    transform:none!important;
+    flex-shrink:0!important;
+  }
+  #appRoot .wrap{
+    padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
+  }
+}
+</style><script>(function(){try{if(localStorage.getItem('apna-sajhedari-member-mode')==='1')document.documentElement.classList.add('member-session-pending')}catch(e){}})();</script></head>
 <body><div class="app" id="appRoot">
 <header class="top"><div class="brand"><div class="logo" role="button" tabindex="0" title="Admin access" aria-label="Admin access" onclick="openAdminLogin()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openAdminLogin()}">🤝</div><div><h1 id="businessNameLabel">Apna Sajhedari</h1><small>Afno Hissedari, Afno Bhag</small></div></div><div class="topright"><span class="pill">PRIVATE GROUP</span><span id="today" class="pill"></span><button id="adminAuthBtn" class="btn light small" type="button" onclick="openAdminLogin()">Admin Login</button><button id="memberLoginBtn" class="btn light small" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button id="installAppBtn" class="btn light small" type="button" hidden>⬇ Install App</button><button id="updateAppBtn" class="btn light small" type="button" onclick="updateInstalledApp()">↻ Update App</button></div></header>
 <div class="wrap"><div class="notice" id="cloudSyncNotice">🟡 <b>Cloud setup baaki:</b> Aapka purana hisaab is device par surakshit hai. Supabase Cloud Sync setup poora hone tak isi device par kaam karein.</div>
