@@ -121,6 +121,7 @@ begin
     'member_id', v_member.id,
     'member_code', v_member.member_code,
     'name', v_member.full_name,
+    'photo_url', v_member.photo_url,
     'mobile', v_member.mobile,
     'address', v_member.address,
     'invested', coalesce((v_member_json->>'invested')::numeric,0),
