@@ -28,14 +28,14 @@ Deno.serve(async (req) => {
     const workerType = String(body.worker_type || "");
     const workerId = String(body.worker_id || "").trim();
     const password = String(body.password || "");
-    if (!["farm", "tempo"].includes(workerType) || !workerId) return reply({ error: "Farm/Tempo Worker select nahi hua." }, 400);
+    if (!["farm", "staff", "tempo"].includes(workerType) || !workerId) return reply({ error: "Farm/Tempo Worker select nahi hua." }, 400);
     if (password.length < 8) return reply({ error: "Naya Worker password kam se kam 8 characters ka ho." }, 400);
 
     stage = "Admin cloud data lookup";
     const { data: state, error: stateError } = await admin.from("app_state").select("data").eq("user_id", authData.user.id).maybeSingle();
     if (stateError || !state?.data) return reply({ error: "Admin ka cloud backup nahi mila. Pehle app sync/backup karein." }, 404);
     const d = state.data;
-    const worker = workerType === "farm"
+    const worker = workerType === "farm" || workerType === "staff"
       ? (Array.isArray(d.staffWorkers) ? d.staffWorkers : []).find((x: any) => String(x.id) === workerId)
       : (Array.isArray(d.tempo?.workers) ? d.tempo.workers : []).find((x: any) => String(x.id) === workerId);
     if (!worker) return reply({ error: "Chuna hua Worker Admin ke latest saved record mein nahi mila. Pehle app sync karein." }, 404);
