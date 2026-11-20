@@ -153,19 +153,28 @@ Deno.serve(async (req) => {
       }
 
       if (!linked || linked.length === 0) {
-        return reply({
-          error: "Yeh mobile pehle se kisi doosre account mein istemal hai. Alag mobile number dein; purana account nahi badla.",
-        }, 409);
-      }
+        // Recover only an orphaned worker account created by this function.
+        // Never attach an unlinked member or unrelated Auth account as staff.
+        const metadata = existing.user_metadata || {};
+        const isOrphanedWorker =
+          metadata.account_kind === "worker" &&
+          String(metadata.worker_name || "").trim() === name;
 
-      const conflict = linked.find(
-        (x: any) => x.worker_type !== workerType || x.worker_id !== workerId,
-      );
+        if (!isOrphanedWorker) {
+          return reply({
+            error: "Yeh mobile pehle se kisi doosre account mein istemal hai. Alag mobile number dein; purana account nahi badla.",
+          }, 409);
+        }
+      } else {
+        const conflict = linked.find(
+          (x: any) => x.worker_type !== workerType || x.worker_id !== workerId,
+        );
 
-      if (conflict) {
-        return reply({
-          error: "Yeh mobile pehle se kisi doosre Worker record se link hai. Admin se record check karayein.",
-        }, 409);
+        if (conflict) {
+          return reply({
+            error: "Yeh mobile pehle se kisi doosre Worker record se link hai. Admin se record check karayein.",
+          }, 409);
+        }
       }
     } else {
       stage = "new login creation";
