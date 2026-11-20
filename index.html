@@ -1202,7 +1202,7 @@ async function closeWorkerStatementPortal(){
 }
 async function restoreWorkerPortalSession(){
  let mode=false;try{mode=localStorage.getItem('apna-sajhedari-worker-mode')==='1'}catch(e){}
- try{const client=getWorkerSupabaseClient(),{data,error}=await client.auth.getSession();if(error)throw error;if(!data.session){if(mode){const app=document.getElementById('appRoot');if(app)app.style.display='none';openWorkerPasswordLogin()}return}
+ try{const client=getWorkerSupabaseClient(),{data,error}=await client.auth.getSession();if(error)throw error;if(!data.session){if(mode){try{localStorage.removeItem('apna-sajhedari-worker-mode')}catch(e){}}return}
  const {data:statement,error:statementError}=await client.rpc('get_my_worker_statements');if(statementError)throw statementError;if(!Array.isArray(statement)||!statement.length)throw new Error('Worker statement nahi mila.');workerPortalData=statement;showWorkerStatementPortal(statement);
  }catch(err){console.warn('Worker session restore:',err);if(mode){try{await getWorkerSupabaseClient().auth.signOut()}catch(e){}try{localStorage.removeItem('apna-sajhedari-worker-mode')}catch(e){}alert('Worker account load nahi hua: '+(err.message||'Error'));}}
 }
