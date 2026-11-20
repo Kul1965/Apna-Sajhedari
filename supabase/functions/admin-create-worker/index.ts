@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
     if (existing) {
       const { data: linked, error: linkedError } = await admin.from("worker_accounts").select("id,worker_type,worker_id").eq("auth_user_id", existing.id);
       if (linkedError) return reply({ error: "Purana Worker link check nahi hua: " + linkedError.message }, 500);
+      if (!linked || linked.length === 0) return reply({ error: "Yeh mobile pehle se kisi doosre account mein istemal hai. Alag mobile number dein; purana account nahi badla." }, 409);
       const conflict = (linked || []).find((x: any) => x.worker_type !== workerType || x.worker_id !== workerId);
       if (conflict) return reply({ error: "Yeh mobile pehle se kisi doosre Worker record se link hai. Admin se record check karayein." }, 409);
     } else {
