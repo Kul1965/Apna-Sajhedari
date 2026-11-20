@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
 
   try {
     const token = (req.headers.get("Authorization") || "")
-      .replace(/^Bearer\\s+/i, "")
+      .replace(/^Bearer\s+/i, "")
       .trim();
 
     if (!token) return reply({ error: "Admin login nahi mila." }, 401);
@@ -113,11 +113,11 @@ Deno.serve(async (req) => {
 
     const name = String(worker.name || "").trim();
     const rawPhone = String(worker.phone || "").trim();
-    const phone = rawPhone.replace(/[^\\d+]/g, "");
+    const phone = rawPhone.replace(/[^\d+]/g, "");
 
     if (!name) return reply({ error: "Worker ka naam missing hai." }, 400);
 
-    if (!/^\\+[1-9][0-9]{7,14}$/.test(phone)) {
+    if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) {
       return reply({
         error: "Worker mobile country code ke saath save karein, jaise +61... ya +91...",
       }, 400);
