@@ -853,6 +853,7 @@ function getMemberSupabaseClient() {
 function updateAdminAuthCard() {
   const authBtn=document.getElementById('adminAuthBtn');
   if(!authBtn) return;
+  authBtn.hidden=false;
   if(!signedInAdmin) {
     authBtn.classList.remove('admin-user-card');
     authBtn.textContent='Admin Login';
