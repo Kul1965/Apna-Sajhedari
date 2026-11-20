@@ -1861,20 +1861,29 @@ async function prepareCloudSync(button){
   }
   if(!row.data||typeof row.data!=='object'||Array.isArray(row.data))throw Error('Cloud data format sahi nahi. Local data ko nahi chhua.');
   const localData=localRaw?JSON.parse(localRaw):null;
+  let syncSnapshot=row.data;
   if(localData&&stableCloudJson(localData)!==stableCloudJson(row.data)){
-   // Do not duplicate a large backup inside localStorage: that can exceed the
-   // browser quota and block Cloud Sync. Download the current local data first.
+   // Keep a downloadable safety copy before combining records from this phone
+   // with Cloud. Never discard members that exist only on this device.
    cloudStage='local safety copy download';
    downloadLocalSafetyCopy();
-   setCloudNotice('<b>Mobile data ki safety copy download ke liye bhej di gayi.</b> Ab Cloud ka latest hisaab load ho raha hai.');
+   setCloudNotice('<b>Mobile data ki safety copy download ke liye bheji gayi.</b> Cloud aur mobile ke members milaye ja rahe hain.');
+   const cloudMembers=Array.isArray(row.data.members)?row.data.members:[];
+   const localMembers=Array.isArray(localData.members)?localData.members:[];
+   const mergedMembers=new Map(cloudMembers.filter(m=>m&&m.id).map(m=>[String(m.id),m]));
+   localMembers.filter(m=>m&&m.id).forEach(m=>mergedMembers.set(String(m.id),{...(mergedMembers.get(String(m.id))||{}),...m}));
+   syncSnapshot={...row.data,...(localData.members?{members:Array.from(mergedMembers.values())}:{})};
   }
+  // Messenger uses the separate members table, so synchronize it as well.
+  cloudStage='sync all members and save merged Cloud data';
+  await cloudWrite(JSON.parse(JSON.stringify(syncSnapshot)));
   cloudStage='save Cloud data on this device';
-  data=row.data;
+  data=syncSnapshot;
   localStorage.setItem(KEY,JSON.stringify(data));
   render();
   cloudSyncReady=true;
-  setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Latest hisaab Cloud se load ho gaya. Ab naye changes apne-aap save honge.',true);
-  if(status)status.textContent='🟢 Latest Cloud hisaab load ho gaya. Ab Save aur Refresh automatic hain.';
+  setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ke members milakar save ho gaye. Ab naye changes apne-aap save honge.',true);
+  if(status)status.textContent='🟢 Cloud Sync chalu hai. Members list aur poora hisaab Cloud mein save hai.';
  }catch(err){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
   setCloudNotice('<b>Cloud Sync mein dikkat:</b> '+esc(err.message||'Connection error')+'. Local data safe hai.');
