@@ -1810,16 +1810,20 @@ restoreMemberPortalSession();
 let cloudSyncReady=false, cloudSyncQueue=Promise.resolve(), cloudSyncErrorShown=false;
 function setCloudNotice(message,ok=false){const el=document.getElementById('cloudSyncNotice');if(el){el.innerHTML=(ok?'🟢 ':'🟡 ')+message;el.style.borderColor=ok?'#27875b':'#80652c'}}
 async function syncMembersToSupabase(snapshot){
- if(!signedInAdmin)return;
+ if(!signedInAdmin)throw Error('Admin Login karein');
  const client=getSupabaseClient();
- for(const m of (snapshot.members||[])){
-  if(!m||!m.id)continue;
-  const row={member_code:'ASJ-'+String(m.id).replace(/-/g,'').slice(0,8).toUpperCase(),full_name:String(m.name||'Member').trim(),mobile:String(m.phone||'').trim()||null,address:String(m.address||'').trim()||null,note:String(m.note||'').trim()||null};
-  const {data:existing,error:findError}=await client.from('members').select('id').eq('id',m.id).maybeSingle();
-  if(findError)throw findError;
-  if(existing){const {error}=await client.from('members').update(row).eq('id',m.id);if(error)throw error}
-  else{const {error}=await client.from('members').insert({id:m.id,...row,active:true});if(error)throw error}
- }
+ const {data:sessionData,error:sessionError}=await client.auth.getSession();
+ if(sessionError)throw sessionError;
+ const accessToken=sessionData?.session?.access_token;
+ if(!accessToken)throw Error('Admin ka Supabase login session nahi mila.');
+ const response=await fetch(SUPABASE_URL+'/functions/v1/admin-sync-members',{
+  method:'POST',
+  headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+accessToken},
+  body:JSON.stringify({members:Array.isArray(snapshot.members)?snapshot.members:[]})
+ });
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||result?.error)throw new Error(result.error||result.message||('Members Sync ruk gaya (HTTP '+response.status+').'));
+ return Number(result.synced_count||0);
 }
 async function cloudWrite(snapshot){
  if(!signedInAdmin)throw Error('Admin Login karein');
