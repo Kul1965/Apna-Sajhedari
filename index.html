@@ -1212,7 +1212,7 @@ async function createStaffOrTempoLogin(workerType,workerId){
   // Save this exact Admin's latest staff record immediately before the Edge Function looks it up.
   // This prevents a stale/missing app_state backup from blocking worker login creation.
   await cloudWrite(JSON.parse(JSON.stringify(data)));
-  const response=await fetch(SUPABASE_URL+'/functions/v1/admin-create-worker',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+accessToken},body:JSON.stringify({worker_type:workerType,worker_id:workerId,password})});
+  const response=await fetch(SUPABASE_URL+'/functions/v1/admin-create-worker',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+accessToken},body:JSON.stringify({worker_type:workerType,worker_id:workerId,password,admin_data:JSON.parse(JSON.stringify(data))})});
   const result=await response.json().catch(()=>({}));
   if(!response.ok||result?.error)throw new Error(result.error||result.message||('Supabase ne request rok di (HTTP '+response.status+').'));
   alert((isTempo?'Tempo':'Staff')+' Login taiyar hai.\nNaam: '+(result.worker_name||worker.name)+'\nMobile: '+(result.phone||phone)+'\n'+(result.message||'Temporary password Worker ko surakshit tareeke se dein.'));
