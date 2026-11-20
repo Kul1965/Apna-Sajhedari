@@ -212,6 +212,21 @@ body{background:radial-gradient(ellipse at 18% 0%,#1b4a36 0%,#0b2118 38%,#06120d
   #modal .dialog .actions .btn{min-height:44px}
 }
 
+/* Tablet and phone: pin the main navigation to the actual screen bottom */
+@media(max-width:1024px){
+  body{padding-bottom:0}
+  #bottomNav{
+    position:fixed!important;
+    top:auto!important;
+    bottom:0!important;
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+    margin:0!important;
+    z-index:999!important;
+  }
+  #appRoot .wrap{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
+}
 /* Mobile navigation: keep all six destinations reachable without squeezing labels */
 @media(max-width:760px){
   .bottomnav{
