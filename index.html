@@ -1618,7 +1618,42 @@ async function syncCloudData(direction){
 }
 
 
-async function updateInstalledApp(){const b=document.getElementById('updateAppBtn');if(b){b.disabled=true;b.textContent='Checking...'}try{if(!('serviceWorker' in navigator)){alert('Is browser mein app update support nahi hai. Browser se app kholein.');return}const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});await reg.update();if(reg.waiting){reg.waiting.postMessage({type:'SKIP_WAITING'});await new Promise(resolve=>{const w=reg.waiting;if(!w){resolve();return}w.addEventListener('statechange',()=>{if(w.state==='activated')resolve()});setTimeout(resolve,2500)});window.location.reload();return}if(reg.installing){await new Promise(resolve=>{const w=reg.installing;w.addEventListener('statechange',()=>{if(w.state==='activated'||w.state==='redundant')resolve()});setTimeout(resolve,8000)});window.location.reload();return}alert('App update check ho gaya. Agar browser mein naya version dikh raha hai, app ko band karke dobara kholein.');window.location.reload()}catch(e){alert('Update check nahi ho paya. Internet chalu karke dobara try karein.')}finally{if(b){b.disabled=false;b.textContent='↻ Update App'}}}
+async function updateInstalledApp(){
+ const b=document.getElementById('updateAppBtn');
+ if(b){b.disabled=true;b.textContent='Updating...'}
+ try{
+  if(!('serviceWorker' in navigator)){alert('Is browser mein app update support nahi hai. Chrome mein app kholein.');return}
+  const hadController=!!navigator.serviceWorker.controller;
+  let controllerChanged=false;
+  const onController=()=>{controllerChanged=true};
+  navigator.serviceWorker.addEventListener('controllerchange',onController,{once:true});
+  const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+  await reg.update();
+  let worker=reg.installing||reg.waiting;
+  if(worker){
+   await new Promise(resolve=>{
+    const finish=()=>resolve();
+    if(worker.state==='activated'||worker.state==='redundant'){finish();return}
+    worker.addEventListener('statechange',()=>{if(worker.state==='activated'||worker.state==='redundant')finish()});
+    setTimeout(finish,12000);
+   });
+  }
+  if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
+  if(hadController&&!controllerChanged){
+   await new Promise(resolve=>{
+    if(controllerChanged){resolve();return}
+    navigator.serviceWorker.addEventListener('controllerchange',resolve,{once:true});
+    setTimeout(resolve,5000);
+   });
+  }
+  window.location.reload();
+ }catch(e){
+  console.error('Installed app update failed:',e);
+  alert('Update nahi hua. Internet check karke ek baar Chrome mein app kholkar Update App dabayein.');
+ }finally{
+  if(b){b.disabled=false;b.textContent='↻ Update App'}
+ }
+}
 
 let deferredInstallPrompt = null;
 const installAppBtn = document.getElementById('installAppBtn');
