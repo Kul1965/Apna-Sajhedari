@@ -61,11 +61,11 @@ begin
       then (select x from jsonb_array_elements(coalesce(v_state->'staffWorkers','[]'::jsonb)) x where x->>'id'=wa.worker_id limit 1)
       else (select x from jsonb_array_elements(coalesce(v_state->'tempo'->'workers','[]'::jsonb)) x where x->>'id'=wa.worker_id limit 1)
     end,
-    'duties', case when wa.worker_type = 'farm'
+    'duties', case when wa.worker_type in ('farm','staff')
       then (select coalesce(jsonb_agg(x),'[]'::jsonb) from jsonb_array_elements(coalesce(v_state->'staffWork','[]'::jsonb)) x where x->>'workerId'=wa.worker_id)
       else (select coalesce(jsonb_agg(x),'[]'::jsonb) from jsonb_array_elements(coalesce(v_state->'tempo'->'duties','[]'::jsonb)) x where x->>'workerId'=wa.worker_id)
     end,
-    'payments', case when wa.worker_type = 'farm'
+    'payments', case when wa.worker_type in ('farm','staff')
       then (select coalesce(jsonb_agg(x),'[]'::jsonb) from jsonb_array_elements(coalesce(v_state->'staffPayments','[]'::jsonb)) x where x->>'workerId'=wa.worker_id)
       else (select coalesce(jsonb_agg(x),'[]'::jsonb) from jsonb_array_elements(coalesce(v_state->'tempo'->'payments','[]'::jsonb)) x where x->>'workerId'=wa.worker_id)
     end
