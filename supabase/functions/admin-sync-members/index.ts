@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return reply({ error: "Sirf POST request allowed hai." }, 405);
   try {
-    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "").trim();
+    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
     if (!token) return reply({ error: "Admin login nahi mila." }, 401);
     const url = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
