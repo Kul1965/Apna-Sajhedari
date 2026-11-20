@@ -1824,6 +1824,9 @@ async function syncMembersToSupabase(snapshot){
 async function cloudWrite(snapshot){
  if(!signedInAdmin)throw Error('Admin Login karein');
  const client=getSupabaseClient();
+ // Keep the Admin Messenger directory in step with every full cloud save.
+ // All other business records remain together in app_state.
+ await syncMembersToSupabase(snapshot);
  const {error}=await client.from('app_state').upsert({user_id:signedInAdmin.id,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});
  if(error)throw error;
 }
