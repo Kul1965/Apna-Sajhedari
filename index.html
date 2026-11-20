@@ -1689,7 +1689,6 @@ async function cloudWrite(snapshot){
  const client=getSupabaseClient();
  const {error}=await client.from('app_state').upsert({user_id:signedInAdmin.id,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});
  if(error)throw error;
- await syncMembersToSupabase(snapshot);
 }
 function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>setCloudNotice('<b>Cloud Sync chalu hai:</b> Naya hisaab aur Members Supabase mein save ho rahe hain.',true)).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
 function downloadLocalSafetyCopy(){const raw=localStorage.getItem(KEY);if(!raw)return;const blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='apna-sajhedari-before-cloud-restore-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
