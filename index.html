@@ -1221,6 +1221,14 @@ function showMemberStatementPortal(s,messages){
  portal.style.display='block';renderMemberInbox(messages||[]);if(memberInboxRefreshTimer)clearInterval(memberInboxRefreshTimer);memberInboxRefreshTimer=setInterval(refreshMemberInbox,30000);
 }
 async function closeMemberStatementPortal(){try{await getMemberSupabaseClient().auth.signOut()}catch(e){}memberPortalUserId=null;memberPortalStatement=null;memberAdminPublicProfile={name:'Admin',photo:''};if(memberInboxRefreshTimer){clearInterval(memberInboxRefreshTimer);memberInboxRefreshTimer=null}const portal=document.getElementById('memberStatementPortal');if(portal)portal.remove();showMemberSignedOutScreen()}
+function showAppEntryScreen(){
+ const app=document.getElementById('appRoot');if(app)app.style.display='none';
+ const member=document.getElementById('memberSignedOutScreen');if(member)member.remove();
+ let screen=document.getElementById('appEntryScreen');
+ if(!screen){screen=document.createElement('main');screen.id='appEntryScreen';document.body.appendChild(screen)}
+ screen.innerHTML='<section class="saj-member-landing"><div class="saj-member-landing-card"><div class="saj-member-mark">🤝</div><div class="saj-member-kicker">APNA SAJHEDARI</div><h1>Welcome</h1><p>Apna account chunein aur surakshit login karein.</p><button class="btn saj-member-primary" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button class="btn light" style="width:100%;padding:13px;border-radius:14px" type="button" onclick="openAdminLogin()">Admin Login</button><small style="display:block;margin-top:14px">Member ko sirf apna personal hisaab dikhega.</small></div></section>';
+ screen.style.display='block';
+}
 function showMemberSignedOutScreen(){
  const app=document.getElementById('appRoot');if(app)app.style.display='none';
  let screen=document.getElementById('memberSignedOutScreen');if(!screen){screen=document.createElement('main');screen.id='memberSignedOutScreen';document.body.appendChild(screen)}
@@ -1767,6 +1775,9 @@ async function supabaseAdminSignIn(ev) {
       throw new Error('Is account ke user_profiles mein admin role nahi mila. Access rok diya gaya hai.');
     }
     signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||authData.user.user_metadata?.full_name||authData.user.email?.split('@')[0]||'Admin').trim()};
+    const entry=document.getElementById('appEntryScreen');if(entry)entry.remove();
+    const memberScreen=document.getElementById('memberSignedOutScreen');if(memberScreen)memberScreen.remove();
+    const app=document.getElementById('appRoot');if(app)app.style.display='block';
     updateAdminAuthCard();
     render();
     closeModal();
@@ -1784,6 +1795,7 @@ async function supabaseAdminSignOut() {
   updateAdminAuthCard();
   render();
   closeModal();
+  showAppEntryScreen();
 }
 function showRecoveryPasswordForm() {
   openModal('Naya Password Set Karein',
@@ -1845,6 +1857,9 @@ async function restoreSupabaseAdminSession() {
       .select('user_id,role,display_name').eq('user_id',data.session.user.id).maybeSingle();
     if(!profileError && profile && profile.role==='admin') {
       signedInAdmin={id:profile.user_id,role:profile.role,display_name:String(profile.display_name||data.session.user.user_metadata?.full_name||data.session.user.email?.split('@')[0]||'Admin').trim()};
+      const entry=document.getElementById('appEntryScreen');if(entry)entry.remove();
+      const memberScreen=document.getElementById('memberSignedOutScreen');if(memberScreen)memberScreen.remove();
+      const app=document.getElementById('appRoot');if(app)app.style.display='block';
       updateAdminAuthCard();
       render();
       prepareCloudSync();
@@ -1949,6 +1964,9 @@ if(dataLoadProblem){
     root.insertBefore(notice,root.firstChild);
   }
 }
+// Keep the Admin dashboard hidden until a verified Admin session is found.
+const initialAppRoot=document.getElementById('appRoot');if(initialAppRoot)initialAppRoot.style.display='none';
+showAppEntryScreen();
 restoreSupabaseAdminSession();
 restoreWorkerPortalSession();
 restoreMemberPortalSession();
