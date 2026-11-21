@@ -1558,12 +1558,13 @@ async function sendAdminSelectedChatMessage(ev){
 }
 async function deleteAdminMemberConversation(id){
  if(!signedInAdmin){alert('Pehle Admin Login karein.');return}
- if(!confirm('Is member ki poori conversation aur uske replies delete karne hain? Baaki members aur hisaab safe rahenge.'))return;
+ if(!confirm('Is member ki poori conversation, replies aur chat photos delete karne hain? Baaki members aur hisaab safe rahenge.'))return;
  try{
   const c=getSupabaseClient();
-  const {data,error}=await c.rpc('admin_delete_member_conversation_v1',{p_member_id:id});
+  const {data,error}=await c.functions.invoke('admin-sync-members',{body:{action:'delete_member_conversation',member_id:id}});
   if(error)throw error;
-  alert('Conversation delete ho gayi.');
+  if(!data?.success)throw new Error(data?.error||'Supabase delete confirm nahi hua.');
+  alert('Conversation delete ho gayi. Messages: '+(data.deleted_messages||0)+', replies: '+(data.deleted_replies||0)+', photos: '+(data.deleted_photos||0));
   await loadAdminMemberMessages();
  }catch(e){alert('Delete nahi hua: '+(e.message||'Supabase error'))}
 }
