@@ -29,31 +29,33 @@ Deno.serve(async (req) => {
     if (profileError || profile?.role !== "admin") return reply({ error: "Sirf Admin member list Cloud mein bhej sakta hai." }, 403);
 
     const body = await req.json();
-    // Admin-only conversation deletion; use Storage API, not SQL on storage.objects.
-    if (body.action === "delete_member_conversation") {
+    console.log("admin-sync-members request", JSON.stringify({ action: body?.action || null, member_id: body?.member_id || null, has_members_array: Array.isArray(body?.members), body_keys: body && typeof body === "object" ? Object.keys(body) : [] }));
+    // Accept explicit action or member_id-only delete request.
+    if (body?.action === "delete_member_conversation" || (body?.member_id && !Array.isArray(body?.members))) {
+      console.log("member conversation delete started", String(body.member_id || ""));
       const memberId = String(body.member_id || "").trim();
-      if (!memberId) return reply({ error: "Member ID nahi mila." }, 400);
+      if (!memberId) { console.error("DELETE_VALIDATION missing member_id", JSON.stringify(body)); return reply({ error: "Member ID nahi mila. Request keys: " + Object.keys(body || {}).join(",") }, 400); }
       const { data: member, error: memberError } = await admin.from("members").select("id, auth_user_id").eq("id", memberId).maybeSingle();
-      if (memberError) return reply({ error: "Member check nahi hua: " + memberError.message }, 500);
-      if (!member) return reply({ error: "Member nahi mila." }, 404);
+      if (memberError) { console.error("DELETE_MEMBER_LOOKUP", memberError); return reply({ error: "Member check nahi hua: " + memberError.message }, 500); }
+      if (!member) { console.error("DELETE_MEMBER_NOT_FOUND", memberId); return reply({ error: "Member nahi mila: " + memberId }, 404); }
       const { data: allMessages, error: messagesError } = await userClient.rpc("admin_get_member_messages_v2");
-      if (messagesError) return reply({ error: "Messages load nahi hue: " + messagesError.message }, 500);
+      if (messagesError) { console.error("DELETE_MESSAGES_RPC", messagesError); return reply({ error: "Messages load nahi hue: " + messagesError.message }, 500); }
       const memberMessages = (allMessages || []).filter((row: any) => String(row.target_member_id) === memberId || (!!member.auth_user_id && String(row.created_by) === String(member.auth_user_id)));
       const messageIds = [...new Set(memberMessages.map((row: any) => String(row.id)))];
       const { data: allReplies, error: repliesError } = await userClient.rpc("admin_get_member_replies_v2");
-      if (repliesError) return reply({ error: "Replies load nahi hue: " + repliesError.message }, 500);
+      if (repliesError) { console.error("DELETE_REPLIES_RPC", repliesError); return reply({ error: "Replies load nahi hue: " + repliesError.message }, 500); }
       const messageIdSet = new Set(messageIds);
       const replies = (allReplies || []).filter((row: any) => messageIdSet.has(String(row.message_id)));
       const paths = [...new Set([...memberMessages.map((row: any) => row.attachment_path), ...replies.map((row: any) => row.attachment_path)].filter((p: any) => typeof p === "string" && p.length > 0))];
       for (let i = 0; i < paths.length; i += 100) {
         const { error } = await admin.storage.from("member-chat-photos").remove(paths.slice(i, i + 100));
-        if (error) return reply({ error: "Chat photo delete nahi hui: " + error.message }, 500);
+        if (error) { console.error("DELETE_STORAGE", error); return reply({ error: "Chat photo delete nahi hui: " + error.message }, 500); }
       }
       const { data: deletedCount, error: deleteError } = await userClient.rpc("admin_delete_member_conversation_v1", { p_member_id: memberId });
-      if (deleteError) return reply({ error: "Conversation database se delete nahi hui: " + deleteError.message }, 500);
+      if (deleteError) { console.error("DELETE_CONVERSATION_RPC", deleteError); return reply({ error: "Conversation database se delete nahi hui: " + deleteError.message }, 500); }
       return reply({ success: true, deleted_messages: Number(deletedCount) || messageIds.length, deleted_replies: replies.length, deleted_photos: paths.length });
     }
-    if (!Array.isArray(body.members)) return reply({ error: "Members list nahi mili." }, 400);
+    if (!Array.isArray(body.members)) { console.error("SYNC_VALIDATION missing members array", JSON.stringify({ keys: Object.keys(body || {}), action: body?.action || null, member_id: body?.member_id || null })); return reply({ error: "Members list nahi mili. Delete action nahi mila; received keys: " + Object.keys(body || {}).join(",") }, 400); }
     if (body.members.length > 500) return reply({ error: "Members list bahut badi hai." }, 400);
 
     const rows = body.members.filter((m: any) => m && m.id).map((m: any) => ({
