@@ -2124,13 +2124,23 @@ if ('serviceWorker' in navigator) {
     appRefreshing = true;
     window.location.reload();
   });
-  window.addEventListener('load', async () => {
+  let sajhedariUpdateRegistration = null;
+  async function checkSajhedariAppUpdate() {
     try {
-      const registration = await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      const registration = sajhedariUpdateRegistration ||
+        await navigator.serviceWorker.getRegistration('./') ||
+        await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+      sajhedariUpdateRegistration = registration;
       await registration.update();
     } catch (err) {
       console.warn('App update check:', err);
     }
+  }
+  window.addEventListener('load', checkSajhedariAppUpdate);
+  window.addEventListener('focus', checkSajhedariAppUpdate);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) checkSajhedariAppUpdate();
   });
+  window.setInterval(checkSajhedariAppUpdate, 5 * 60 * 1000);
 }
 </script></body></html>
