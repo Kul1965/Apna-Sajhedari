@@ -1535,10 +1535,29 @@ async function loadAdminWorkerMessages(host){
   const staffPhoto=chosen.photo||chosen.image||chosen.imageUrl||chosen.local?.photo||chosen.local?.image||'';
   const staffName=String(chosen.display_name||'Staff').trim().split(/\s+/)[0]||'Staff';
   const messageHtml=msgs.length?msgs.map(m=>{const fromAdmin=m.sender_role==='admin',sender=fromAdmin?adminName:staffName,photo=fromAdmin?adminPhoto:staffPhoto;return '<div class="saj-chat-bubble '+(fromAdmin?'saj-chat-admin':'saj-chat-received')+'"><div class="saj-chat-sender">'+(photo?'<img class="saj-chat-sender-avatar" src="'+esc(photo)+'" alt="">':'<span class="saj-chat-sender-avatar saj-chat-sender-initial">'+esc((sender||'A').charAt(0).toUpperCase())+'</span>')+'<b>'+esc(sender)+'</b></div><p style="white-space:pre-wrap;margin:5px 0">'+esc(m.body||'')+'</p><small>'+new Date(m.created_at).toLocaleString('en-IN')+'</small></div>'}).join(''):'<p class="muted">Abhi message nahi. Neeche likhein.</p>';
-  win.innerHTML='<header class="saj-admin-chat-title"><b>'+esc(staffName)+'</b><small class="muted"> · '+(chosen.worker_type==='tempo'?'Tempo Staff':'Farm Staff')+'</small><span style="margin-left:auto;color:'+(linked?'#20d879':'#d49a35')+'">'+(linked?'● Login active':'● Login nahi bana')+'</span></header><div class="saj-admin-chat-thread">'+messageHtml+'</div>'+(linked?'<form class="saj-chat-compose" onsubmit="sendAdminWorkerMessage(event,\''+esc(String(chosen.account_id))+'\')"><textarea name="body" rows="1" required placeholder="Message / Reply likhein..."></textarea><button class="saj-chat-send">➤</button></form>':'<small class="muted">Login banne ke baad is Staff ko yahin se message bhej sakenge.</small>');
+  win.innerHTML='<header class="saj-admin-chat-title"><b>'+esc(staffName)+'</b><small class="muted"> · '+(chosen.worker_type==='tempo'?'Tempo Staff':'Farm Staff')+'</small><span style="margin-left:auto;color:'+(linked?'#20d879':'#d49a35')+'">'+(linked?'● Login active':'● Login nahi bana')+'</span>'+(linked?'<button type="button" data-delete-worker-conversation="'+esc(String(chosen.account_id))+'" style="margin-left:8px;padding:7px 10px;border:1px solid #c9a95c;border-radius:9px;background:#4a211b;color:#fff">Delete</button>':'')+'</header><div class="saj-admin-chat-thread">'+messageHtml+'</div>'+(linked?'<form class="saj-chat-compose" onsubmit="sendAdminWorkerMessage(event,\''+esc(String(chosen.account_id))+'\')"><textarea name="body" rows="1" required placeholder="Message / Reply likhein..."></textarea><button class="saj-chat-send">➤</button></form>':'<small class="muted">Login banne ke baad is Staff ko yahin se message bhej sakenge.</small>');
   const thread=win.querySelector('.saj-admin-chat-thread');if(thread)thread.scrollTop=thread.scrollHeight;
  }catch(e){console.error('Staff messages load:',e)}
 }
+async function deleteAdminWorkerConversation(accountId){
+ if(!signedInAdmin){alert('Pehle Admin Login karein.');return}
+ if(!confirm('Is Staff ki poori conversation aur chat photos delete karni hain? Staff account, duty, salary aur payment records safe rahenge.'))return;
+ try{
+  const c=getSupabaseClient();
+  const {data,error}=await c.functions.invoke('admin-sync-members',{body:{action:'delete_worker_conversation',worker_account_id:accountId}});
+  if(error)throw error;
+  if(!data?.success)throw new Error(data?.error||'Staff conversation delete confirm nahi hui.');
+  alert('Staff conversation delete ho gayi. Messages: '+(data.deleted_messages||0)+', photos: '+(data.deleted_photos||0));
+  window.selectedAdminWorkerKey='';
+  await loadAdminMemberMessages();
+ }catch(e){let msg=e?.message||'Supabase error';try{if(e?.context){const detail=await e.context.clone().json();msg=detail?.error||detail?.message||msg}}catch(_){}alert('Staff conversation delete nahi hui: '+msg)}
+}
+document.addEventListener('click',function(ev){
+ const del=ev.target.closest('#adminMemberMessages [data-delete-worker-conversation]');
+ if(!del)return;
+ ev.preventDefault();ev.stopPropagation();
+ deleteAdminWorkerConversation(del.getAttribute('data-delete-worker-conversation'));
+});
 async function sendAdminWorkerMessage(ev,accountId){
  ev.preventDefault();const form=ev.target,body=String(new FormData(form).get('body')||'').trim();if(!body)return;
  const btn=form.querySelector('button');btn.disabled=true;
