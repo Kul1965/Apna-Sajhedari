@@ -2034,7 +2034,27 @@ async function cloudWrite(snapshot){
  if(error)throw error;
 }
 function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>setCloudNotice('<b>Cloud Sync chalu hai:</b> Naya hisaab Supabase mein save ho raha hai.',true)).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
-function downloadLocalSafetyCopy(){const raw=localStorage.getItem(KEY);if(!raw)return;const blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='apna-sajhedari-before-cloud-restore-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+async function downloadLocalSafetyCopy(){
+ const raw=localStorage.getItem(KEY);if(!raw)return 'missing';
+ const filename='Apna-Sajhedari-Before-Cloud-Restore.json';
+ try{
+  const handle=await getBackupFolderHandle();
+  if(handle){const permission=await handle.queryPermission({mode:'readwrite'});if(permission==='granted'){
+   const file=await handle.getFileHandle(filename,{create:true}),writable=await file.createWritable();
+   await writable.write(new Blob([raw],{type:'application/json'}));await writable.close();
+   return 'updated';
+  }}
+ }catch(e){console.warn('Backup folder write unavailable; using Downloads:',e)}
+ let hash=2166136261;for(let i=0;i<raw.length;i++){hash^=raw.charCodeAt(i);hash=Math.imul(hash,16777619)}
+ const marker='apna-sajhedari-safety-copy-'+new Date().toISOString().slice(0,10);
+ const signature=String(hash>>>0)+'-'+raw.length;
+ try{if(localStorage.getItem(marker)===signature)return 'already-saved'}catch(e){}
+ const blob=new Blob([raw],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='apna-sajhedari-before-cloud-restore-'+new Date().toISOString().slice(0,10)+'.json';
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+ try{localStorage.setItem(marker,signature)}catch(e){}
+ return 'downloaded';
+}
 function stableCloudJson(value){
  if(Array.isArray(value))return '['+value.map(stableCloudJson).join(',')+']';
  if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+stableCloudJson(value[k])).join(',')+'}';
@@ -2069,8 +2089,8 @@ async function prepareCloudSync(button){
    // Keep a downloadable safety copy before combining records from this phone
    // with Cloud. Never discard members that exist only on this device.
    cloudStage='local safety copy download';
-   downloadLocalSafetyCopy();
-   setCloudNotice('<b>Mobile data ki safety copy download ke liye bheji gayi.</b> Cloud aur mobile ke members milaye ja rahe hain.');
+   const safetyResult=await downloadLocalSafetyCopy();
+   setCloudNotice(safetyResult==='updated'?'<b>Mobile safety copy purani wali file mein update ho gayi.</b> Cloud aur mobile ke members milaye ja rahe hain.':safetyResult==='already-saved'?'<b>Aaj ki isi data ki safety copy pehle se saved hai.</b> Cloud aur mobile ke members milaye ja rahe hain.':'<b>Mobile data ki safety copy Downloads mein bheji gayi.</b> Cloud aur mobile ke members milaye ja rahe hain.');
    const cloudMembers=Array.isArray(row.data.members)?row.data.members:[];
    const localMembers=Array.isArray(localData.members)?localData.members:[];
    const mergedMembers=new Map(cloudMembers.filter(m=>m&&m.id).map(m=>[String(m.id),m]));
@@ -2103,7 +2123,7 @@ async function syncCloudData(direction){
    await cloudWrite(JSON.parse(JSON.stringify(data)));cloudSyncReady=true;closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Is mobile ka hisaab Cloud mein save hai.',true);alert('Mobile ka hisaab Cloud mein save ho gaya.');
   }else if(direction==='download'){
    if(!confirm('Pehle mobile data ki safety copy download hogi. Phir Cloud ka data is mobile mein aayega. Aage badhein?'))return;
-   downloadLocalSafetyCopy();const {data:row,error}=await getSupabaseClient().from('app_state').select('data').eq('user_id',signedInAdmin.id).single();if(error)throw error;
+   await downloadLocalSafetyCopy();const {data:row,error}=await getSupabaseClient().from('app_state').select('data').eq('user_id',signedInAdmin.id).single();if(error)throw error;
    data=row.data;localStorage.setItem(KEY,JSON.stringify(data));render();cloudSyncReady=true;closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par load ho gaya.',true);alert('Cloud ka hisaab aa gaya. Mobile ke purane data ki safety copy download ki gayi.');
   }
  }catch(err){cloudSyncReady=false;alert('Cloud Sync nahi hua: '+(err.message||'Connection error')+'. Mobile data safe hai.')}
