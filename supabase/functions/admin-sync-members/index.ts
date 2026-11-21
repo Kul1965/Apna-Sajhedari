@@ -55,6 +55,34 @@ Deno.serve(async (req) => {
       if (deleteError) { console.error("DELETE_CONVERSATION_RPC", deleteError); return reply({ error: "Conversation database se delete nahi hui: " + deleteError.message }, 500); }
       return reply({ success: true, deleted_messages: Number(deletedCount) || messageIds.length, deleted_replies: replies.length, deleted_photos: paths.length });
     }
+    // FARM / TEMPO STAFF CONVERSATION DELETE
+    if (body?.action === "delete_worker_conversation") {
+      const workerAccountId = String(body.worker_account_id || "").trim();
+      if (!workerAccountId) return reply({ error: "Staff account ID nahi mila." }, 400);
+
+      const { data: allAccounts, error: accountsError } = await userClient.rpc("admin_get_worker_messages_v1");
+      if (accountsError) return reply({ error: "Staff messages load nahi hue: " + accountsError.message }, 500);
+      const account = (allAccounts || []).find((row: any) => String(row.account_id) === workerAccountId);
+      if (!account) return reply({ error: "Staff conversation nahi mili." }, 404);
+
+      const messages = Array.isArray(account.messages) ? account.messages : [];
+      const paths = [...new Set(messages.map((row: any) => row.attachment_path).filter((path: any) => typeof path === "string" && path.length > 0))];
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await admin.storage.from("member-chat-photos").remove(paths.slice(i, i + 100));
+        if (error) {
+          console.error("DELETE STAFF CHAT PHOTOS", error);
+          return reply({ error: "Staff chat photo delete nahi hui: " + error.message }, 500);
+        }
+      }
+
+      const { data: deletedCount, error: deleteError } = await userClient.rpc("admin_delete_worker_conversation_v1", { p_worker_account_id: workerAccountId });
+      if (deleteError) {
+        console.error("DELETE STAFF CONVERSATION RPC", deleteError);
+        return reply({ error: "Staff conversation database se delete nahi hui: " + deleteError.message }, 500);
+      }
+      return reply({ success: true, deleted_messages: Number(deletedCount) || messages.length, deleted_photos: paths.length });
+    }
+
     if (!Array.isArray(body.members)) { console.error("SYNC_VALIDATION missing members array", JSON.stringify({ keys: Object.keys(body || {}), action: body?.action || null, member_id: body?.member_id || null })); return reply({ error: "Members list nahi mili. Delete action nahi mila; received keys: " + Object.keys(body || {}).join(",") }, 400); }
     if (body.members.length > 500) return reply({ error: "Members list bahut badi hai." }, 400);
 
