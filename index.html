@@ -1231,11 +1231,8 @@ function showAppEntryScreen(){
  screen.style.display='block';
 }
 function showMemberSignedOutScreen(){
- const entry=document.getElementById('appEntryScreen');if(entry)entry.remove();
- const app=document.getElementById('appRoot');if(app)app.style.display='none';
- let screen=document.getElementById('memberSignedOutScreen');if(!screen){screen=document.createElement('main');screen.id='memberSignedOutScreen';document.body.appendChild(screen)}
- screen.innerHTML='<section class="saj-member-landing"><div class="saj-member-landing-card"><div class="saj-member-mark">🤝</div><div class="saj-member-kicker">APNA SAJHEDARI</div><h1>Member Account</h1><p>Aapka personal hisaab aur messages surakshit hain.</p><button class="btn saj-member-primary" type="button" onclick="openMemberPasswordLogin()">Member Login</button><small>Admin dashboard yahan nahi dikhaya jayega.</small></div></section>';
- screen.style.display='block';
+ // Use the same shared entry screen for Member, Staff and Admin.
+ showAppEntryScreen();
 }
 
 async function createStaffOrTempoLogin(workerType,workerId){
