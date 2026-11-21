@@ -1227,7 +1227,7 @@ function showAppEntryScreen(){
  const member=document.getElementById('memberSignedOutScreen');if(member)member.remove();
  let screen=document.getElementById('appEntryScreen');
  if(!screen){screen=document.createElement('main');screen.id='appEntryScreen';document.body.appendChild(screen)}
- screen.innerHTML='<section class="saj-member-landing"><div class="saj-member-landing-card"><div class="saj-member-mark">🤝</div><div class="saj-member-kicker">APNA SAJHEDARI</div><h1>Welcome</h1><p>Apna account chunein aur surakshit login karein.</p><button class="btn saj-member-primary" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button class="btn light" style="width:100%;padding:13px;border-radius:14px" type="button" onclick="openAdminLogin()">Admin Login</button><small style="display:block;margin-top:14px">Member ko sirf apna personal hisaab dikhega.</small></div></section>';
+ screen.innerHTML='<section class="saj-member-landing"><div class="saj-member-landing-card"><div class="saj-member-mark">🤝</div><div class="saj-member-kicker">APNA SAJHEDARI</div><h1>Welcome</h1><p>Apna account chunein aur surakshit login karein.</p><button class="btn saj-member-primary" type="button" onclick="openMemberPasswordLogin()">Member Login</button><button class="btn light" style="width:100%;padding:13px;border-radius:14px;margin:5px 0" type="button" onclick="openWorkerPasswordLogin()">Staff Login</button><button class="btn light" style="width:100%;padding:13px;border-radius:14px" type="button" onclick="openAdminLogin()">Admin Login</button><small style="display:block;margin-top:14px">Member, Staff aur Admin ke liye unka apna surakshit page.</small></div></section>';
  screen.style.display='block';
 }
 function showMemberSignedOutScreen(){
@@ -1283,6 +1283,7 @@ async function workerPasswordSignIn(ev){
  }catch(err){msg.textContent=err.message||'Login nahi hua.';try{await getWorkerSupabaseClient().auth.signOut()}catch(e){}btn.disabled=false;btn.textContent='Login'}
 }
 function showWorkerStatementPortal(accounts){
+ const entry=document.getElementById('appEntryScreen');if(entry)entry.remove();
  try{localStorage.setItem('apna-sajhedari-worker-mode','1')}catch(e){}
  document.getElementById('memberStatementPortal')?.remove();document.getElementById('memberSignedOutScreen')?.remove();
  const app=document.getElementById('appRoot');if(app)app.style.display='none';
