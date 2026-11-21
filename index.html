@@ -1080,7 +1080,7 @@ function openAdminLogin() {
     openModal('Supabase Admin Connection',
       '<p class="muted">Connected as <b>'+esc(logged.display_name||'Apna Sajhedari Admin')+'</b>.</p>'+
       '<p class="muted">Secure Admin Login verified. Cloud Sync ka status neeche dekhein.</p>'+
-      '<div id="cloudSyncModalStatus" class="muted" style="margin:10px 0;font-size:13px">Cloud Sync ka status yahan dikhega.</div><div class="actions"><button id="cloudSyncCheckBtn" class="btn" onclick="prepareCloudSync(this)">☁️ Cloud Sync check karein</button><button class="btn light" onclick="closeModal()">Close</button><button class="btn danger" onclick="supabaseAdminSignOut()">Sign out</button></div>');
+      '<div id="cloudSyncModalStatus" class="muted" style="margin:10px 0;font-size:13px">Cloud Sync ka status yahan dikhega.</div><div class="actions"><button class="btn" onclick="syncCloudData(&quot;download&quot;)">☁️ Cloud se data laayein</button><button id="cloudSyncCheckBtn" class="btn light" onclick="prepareCloudSync(this)">Cloud Sync check karein</button><button class="btn light" onclick="closeModal()">Close</button><button class="btn danger" onclick="supabaseAdminSignOut()">Sign out</button></div>');
     return;
   }
   openModal('Supabase Admin Login',
