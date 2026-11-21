@@ -35,34 +35,22 @@ Deno.serve(async (req) => {
       const { data: member, error: memberError } = await admin.from("members").select("id, auth_user_id").eq("id", memberId).maybeSingle();
       if (memberError) return reply({ error: "Member check nahi hua: " + memberError.message }, 500);
       if (!member) return reply({ error: "Member nahi mila." }, 404);
-      const messageMap = new Map<string, any>();
-      const { data: targetMessages, error: targetError } = await admin.from("member_messages").select("id, attachment_path").eq("target_member_id", memberId);
-      if (targetError) return reply({ error: "Messages load nahi hue: " + targetError.message }, 500);
-      for (const row of targetMessages || []) messageMap.set(String(row.id), row);
-      if (member.auth_user_id) {
-        const { data: ownMessages, error: ownError } = await admin.from("member_messages").select("id, attachment_path").eq("created_by", member.auth_user_id);
-        if (ownError) return reply({ error: "Member ke messages load nahi hue: " + ownError.message }, 500);
-        for (const row of ownMessages || []) messageMap.set(String(row.id), row);
-      }
-      const messageIds = [...messageMap.keys()];
-      let replies: any[] = [];
-      if (messageIds.length) {
-        const { data, error } = await admin.from("member_message_replies").select("id, message_id, attachment_path").in("message_id", messageIds);
-        if (error) return reply({ error: "Replies load nahi hue: " + error.message }, 500);
-        replies = data || [];
-      }
-      const paths = [...new Set([...([...messageMap.values()].map((r: any) => r.attachment_path)), ...replies.map((r: any) => r.attachment_path)].filter((p: any) => typeof p === "string" && p.length > 0))];
+      const { data: allMessages, error: messagesError } = await admin.rpc("admin_get_member_messages_v2");
+      if (messagesError) return reply({ error: "Messages load nahi hue: " + messagesError.message }, 500);
+      const memberMessages = (allMessages || []).filter((row: any) => String(row.target_member_id) === memberId || (!!member.auth_user_id && String(row.created_by) === String(member.auth_user_id)));
+      const messageIds = [...new Set(memberMessages.map((row: any) => String(row.id)))];
+      const { data: allReplies, error: repliesError } = await admin.rpc("admin_get_member_replies_v2");
+      if (repliesError) return reply({ error: "Replies load nahi hue: " + repliesError.message }, 500);
+      const messageIdSet = new Set(messageIds);
+      const replies = (allReplies || []).filter((row: any) => messageIdSet.has(String(row.message_id)));
+      const paths = [...new Set([...memberMessages.map((row: any) => row.attachment_path), ...replies.map((row: any) => row.attachment_path)].filter((p: any) => typeof p === "string" && p.length > 0))];
       for (let i = 0; i < paths.length; i += 100) {
         const { error } = await admin.storage.from("member-chat-photos").remove(paths.slice(i, i + 100));
         if (error) return reply({ error: "Chat photo delete nahi hui: " + error.message }, 500);
       }
-      if (messageIds.length) {
-        const { error } = await admin.from("member_message_replies").delete().in("message_id", messageIds);
-        if (error) return reply({ error: "Replies delete nahi hue: " + error.message }, 500);
-        const { error: messageDeleteError } = await admin.from("member_messages").delete().in("id", messageIds);
-        if (messageDeleteError) return reply({ error: "Messages delete nahi hue: " + messageDeleteError.message }, 500);
-      }
-      return reply({ success: true, deleted_messages: messageIds.length, deleted_replies: replies.length, deleted_photos: paths.length });
+      const { data: deletedCount, error: deleteError } = await admin.rpc("admin_delete_member_conversation_v1", { p_member_id: memberId });
+      if (deleteError) return reply({ error: "Conversation database se delete nahi hui: " + deleteError.message }, 500);
+      return reply({ success: true, deleted_messages: Number(deletedCount) || messageIds.length, deleted_replies: replies.length, deleted_photos: paths.length });
     }
     if (!Array.isArray(body.members)) return reply({ error: "Members list nahi mili." }, 400);
     if (body.members.length > 500) return reply({ error: "Members list bahut badi hai." }, 400);
