@@ -791,10 +791,18 @@ function load(){
     return d;
   }catch(e){dataLoadProblem=e;dataLoadRaw=raw;console.error('Apna Sajhedari data load blocked; original data has NOT been replaced.',e);return blank()}
 }
+let localStorageQuotaFull=false;
+function safeSaveLocal(snapshot){
+ try{localStorage.setItem(KEY,JSON.stringify(snapshot));localStorageQuotaFull=false;return true}
+ catch(e){localStorageQuotaFull=true;console.warn('Local storage unavailable/full; keeping data in memory and syncing Cloud:',e);return false}
+}
 function save(){
   if(dataLoadProblem){alert('Purana data padhne mein dikkat hai. Safety ke liye koi naya data save nahi kiya jayega. Pehle original data ka backup nikalein.');return false}
-  try{localStorage.setItem(KEY,JSON.stringify(data));render();if(cloudSyncReady)queueCloudSave();return true}
-  catch(e){console.error('Apna Sajhedari save failed:',e);alert('Data save nahi hua. Storage full ya unavailable ho sakta hai. App band karne se pehle backup check karein.');return false}
+  const localOk=safeSaveLocal(data);
+  render();
+  if(cloudSyncReady){queueCloudSave();if(!localOk)setCloudNotice('<b>Phone ki local storage bhar gayi hai.</b> Is change ko Cloud mein save kiya ja raha hai. App band/reload na karein jab tak Cloud Sync confirm na ho.',false);return true}
+  if(!localOk){alert('Phone ki storage bhar gayi hai. Badlav abhi isi screen ki memory mein hai; Cloud Sync connect hone tak app band ya reload na karein.');return false}
+  return true;
 }
 function downloadOriginalSavedData(){
   if(typeof dataLoadRaw!=='string'){alert('Original saved data browser se read nahi ho paaya. Is device ka browser storage clear na karein.');return}
@@ -2088,7 +2096,7 @@ function startCloudWatch(){
    }
    cloudApplyingRemote=true;
    data=cloneCloudData(row.data);
-   localStorage.setItem(KEY,JSON.stringify(data));
+   safeSaveLocal(data);
    lastCloudSnapshot=cloneCloudData(row.data);
    render();
    setCloudNotice('<b>Cloud Sync chalu hai:</b> Doosre device ka naya hisaab is device par aa gaya.',true);
@@ -2200,13 +2208,13 @@ async function prepareCloudSync(button){
   await cloudWrite(JSON.parse(JSON.stringify(syncSnapshot)));
   cloudStage='save Cloud data on this device';
   data=syncSnapshot;
-  localStorage.setItem(KEY,JSON.stringify(data));
+  const localSaved=safeSaveLocal(data);
   render();
   cloudSyncReady=true;
   lastCloudSnapshot=cloneCloudData(data);
   startCloudWatch();
-  setCloudNotice(memberDirectorySyncPending?'<b>Hisaab Cloud mein save hai.</b> Member login directory ka sync pending hai; main hisaab surakshit hai.':'<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil gaya. Ab dono devices ke updates apne-aap aayenge.',!memberDirectorySyncPending);
-  if(status)status.textContent=memberDirectorySyncPending?'Main hisaab Cloud mein save hai; member login directory sync pending hai.':'🟢 Cloud Sync chalu hai. Members list aur poora hisaab Cloud mein save hai.';
+  setCloudNotice(!localSaved?'<b>Cloud mein hisaab save hai.</b> Is phone ki local storage full hai; Cloud se data isi session mein chal raha hai.':'<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil gaya. Ab dono devices ke updates apne-aap aayenge.',!!localSaved&&!memberDirectorySyncPending);
+  if(status)status.textContent=!localSaved?'🟢 Main hisaab Cloud mein save hai. Is device ki storage full hai; local copy update nahi hui.':memberDirectorySyncPending?'Main hisaab Cloud mein save hai; member login directory sync pending hai.':'🟢 Cloud Sync chalu hai. Members list aur poora hisaab Cloud mein save hai.';
  }catch(err){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
   setCloudNotice('<b>Cloud Sync mein dikkat:</b> '+esc(err.message||'Connection error')+'. Local data safe hai.');
@@ -2224,7 +2232,7 @@ async function syncCloudData(direction){
   }else if(direction==='download'){
    if(!confirm('Pehle mobile data ki safety copy download hogi. Phir Cloud ka data is mobile mein aayega. Aage badhein?'))return;
    await downloadLocalSafetyCopy();const {data:row,error}=await getSupabaseClient().from('app_state').select('data').eq('user_id',signedInAdmin.id).single();if(error)throw error;
-   data=row.data;localStorage.setItem(KEY,JSON.stringify(data));render();cloudSyncReady=true;lastCloudSnapshot=cloneCloudData(data);startCloudWatch();closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par load ho gaya.',true);alert('Cloud ka hisaab aa gaya. Mobile ke purane data ki safety copy download ki gayi.');
+   data=row.data;const localSaved=safeSaveLocal(data);render();cloudSyncReady=true;lastCloudSnapshot=cloneCloudData(data);startCloudWatch();closeModal();setCloudNotice(localSaved?'<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par load ho gaya.':'<b>Cloud ka hisaab load ho gaya.</b> Is phone ki local storage full hai; data isi session mein available hai.',localSaved);alert(localSaved?'Cloud ka hisaab aa gaya. Mobile ke purane data ki safety copy download ki gayi.':'Cloud ka hisaab aa gaya, lekin phone ki storage full hai. App band/reload na karein jab tak storage ka safe solution na ho.');
   }
  }catch(err){cloudSyncReady=false;alert('Cloud Sync nahi hua: '+(err.message||'Connection error')+'. Mobile data safe hai.')}
 }
