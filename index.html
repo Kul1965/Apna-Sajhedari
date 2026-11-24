@@ -2064,6 +2064,33 @@ restoreWorkerPortalSession();
 restoreMemberPortalSession();
 
 let cloudSyncReady=false, cloudSyncQueue=Promise.resolve(), cloudSyncErrorShown=false;
+let lastCloudSnapshot=null, cloudWatchTimer=null, cloudApplyingRemote=false;
+function cloneCloudData(value){return JSON.parse(JSON.stringify(value))}
+function startCloudWatch(){
+ if(cloudWatchTimer)clearInterval(cloudWatchTimer);
+ cloudWatchTimer=setInterval(async()=>{
+  if(!signedInAdmin||!cloudSyncReady||cloudApplyingRemote)return;
+  try{
+   const {data:row,error}=await getSupabaseClient().from('app_state').select('data,updated_at').eq('user_id',signedInAdmin.id).maybeSingle();
+   if(error)throw error;
+   if(!row||!row.data||typeof row.data!=='object')return;
+   const remoteJson=stableCloudJson(row.data);
+   if(lastCloudSnapshot&&remoteJson===stableCloudJson(lastCloudSnapshot))return;
+   const localRaw=localStorage.getItem(KEY),localData=localRaw?JSON.parse(localRaw):null;
+   if(lastCloudSnapshot&&localData&&stableCloudJson(localData)!==stableCloudJson(lastCloudSnapshot)){
+    setCloudNotice('<b>Cloud par doosre device ka update mila, lekin is mobile par bhi unsynced badlav hain.</b> Dono data surakshit rakhe gaye hain. Admin Login → Cloud Sync check karein.');
+    return;
+   }
+   cloudApplyingRemote=true;
+   data=cloneCloudData(row.data);
+   localStorage.setItem(KEY,JSON.stringify(data));
+   lastCloudSnapshot=cloneCloudData(row.data);
+   render();
+   setCloudNotice('<b>Cloud Sync chalu hai:</b> Doosre device ka naya hisaab is device par aa gaya.',true);
+  }catch(err){console.warn('Cloud live refresh:',err);setCloudNotice('<b>Cloud refresh mein dikkat:</b> '+esc(err.message||'Connection error')+'. Is device ka data safe hai.')}
+  finally{cloudApplyingRemote=false}
+ },12000);
+}
 function setCloudNotice(message,ok=false){const el=document.getElementById('cloudSyncNotice');if(el){el.innerHTML=(ok?'🟢 ':'🟡 ')+message;el.style.borderColor=ok?'#27875b':'#80652c'}}
 async function syncMembersToSupabase(snapshot){
  if(!signedInAdmin)throw Error('Admin Login karein');
@@ -2090,7 +2117,7 @@ async function cloudWrite(snapshot){
  const {error}=await client.from('app_state').upsert({user_id:signedInAdmin.id,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});
  if(error)throw error;
 }
-function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>setCloudNotice('<b>Cloud Sync chalu hai:</b> Naya hisaab Supabase mein save ho raha hai.',true)).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
+function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>{lastCloudSnapshot=cloneCloudData(snapshot);setCloudNotice('<b>Cloud Sync chalu hai:</b> Naya hisaab Supabase mein save ho raha hai.',true)}).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
 async function downloadLocalSafetyCopy(){
  const raw=localStorage.getItem(KEY);if(!raw)return 'missing';
  const filename='Apna-Sajhedari-Before-Cloud-Restore.json';
@@ -2135,7 +2162,9 @@ async function prepareCloudSync(button){
    cloudStage='first cloud save';
    await cloudWrite(JSON.parse(JSON.stringify(data)));
    cloudSyncReady=true;
-   setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Is device ka hisaab Cloud mein save ho gaya.',true);
+   lastCloudSnapshot=cloneCloudData(data);
+   startCloudWatch();
+   setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Is device ka hisaab Cloud mein save ho gaya. Doosre device ke updates bhi apne-aap aayenge.',true);
    if(status)status.textContent='🟢 Cloud Sync chalu hai. Naya hisaab apne-aap save hoga.';
    return;
   }
@@ -2151,7 +2180,7 @@ async function prepareCloudSync(button){
    const cloudMembers=Array.isArray(row.data.members)?row.data.members:[];
    const localMembers=Array.isArray(localData.members)?localData.members:[];
    const mergedMembers=new Map(cloudMembers.filter(m=>m&&m.id).map(m=>[String(m.id),m]));
-   localMembers.filter(m=>m&&m.id).forEach(m=>mergedMembers.set(String(m.id),{...(mergedMembers.get(String(m.id))||{}),...m}));
+   localMembers.filter(m=>m&&m.id).forEach(m=>{const id=String(m.id);if(!mergedMembers.has(id))mergedMembers.set(id,m)});
    syncSnapshot={...row.data,...(localData.members?{members:Array.from(mergedMembers.values())}:{})};
   }
   // Messenger uses the separate members table, so synchronize it as well.
@@ -2162,7 +2191,9 @@ async function prepareCloudSync(button){
   localStorage.setItem(KEY,JSON.stringify(data));
   render();
   cloudSyncReady=true;
-  setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ke members milakar save ho gaye. Ab naye changes apne-aap save honge.',true);
+  lastCloudSnapshot=cloneCloudData(data);
+  startCloudWatch();
+  setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil gaya. Ab dono devices ke updates apne-aap aayenge.',true);
   if(status)status.textContent='🟢 Cloud Sync chalu hai. Members list aur poora hisaab Cloud mein save hai.';
  }catch(err){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
@@ -2177,11 +2208,11 @@ async function syncCloudData(direction){
  try{
   if(direction==='upload'){
    if(!confirm('Is mobile ka poora hisaab Cloud ke purane hisaab ki jagah save hoga. Kya aap pakka hain?'))return;
-   await cloudWrite(JSON.parse(JSON.stringify(data)));cloudSyncReady=true;closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Is mobile ka hisaab Cloud mein save hai.',true);alert('Mobile ka hisaab Cloud mein save ho gaya.');
+   await cloudWrite(JSON.parse(JSON.stringify(data)));cloudSyncReady=true;lastCloudSnapshot=cloneCloudData(data);startCloudWatch();closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Is mobile ka hisaab Cloud mein save hai.',true);alert('Mobile ka hisaab Cloud mein save ho gaya.');
   }else if(direction==='download'){
    if(!confirm('Pehle mobile data ki safety copy download hogi. Phir Cloud ka data is mobile mein aayega. Aage badhein?'))return;
    await downloadLocalSafetyCopy();const {data:row,error}=await getSupabaseClient().from('app_state').select('data').eq('user_id',signedInAdmin.id).single();if(error)throw error;
-   data=row.data;localStorage.setItem(KEY,JSON.stringify(data));render();cloudSyncReady=true;closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par load ho gaya.',true);alert('Cloud ka hisaab aa gaya. Mobile ke purane data ki safety copy download ki gayi.');
+   data=row.data;localStorage.setItem(KEY,JSON.stringify(data));render();cloudSyncReady=true;lastCloudSnapshot=cloneCloudData(data);startCloudWatch();closeModal();setCloudNotice('<b>Cloud Sync chalu hai:</b> Cloud ka hisaab is mobile par load ho gaya.',true);alert('Cloud ka hisaab aa gaya. Mobile ke purane data ki safety copy download ki gayi.');
   }
  }catch(err){cloudSyncReady=false;alert('Cloud Sync nahi hua: '+(err.message||'Connection error')+'. Mobile data safe hai.')}
 }
