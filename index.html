@@ -2065,6 +2065,7 @@ restoreMemberPortalSession();
 
 let cloudSyncReady=false, cloudSyncQueue=Promise.resolve(), cloudSyncErrorShown=false;
 let lastCloudSnapshot=null, cloudWatchTimer=null, cloudApplyingRemote=false;
+let memberDirectorySyncPending=false;
 function cloneCloudData(value){return JSON.parse(JSON.stringify(value))}
 function startCloudWatch(){
  if(cloudWatchTimer)clearInterval(cloudWatchTimer);
@@ -2111,13 +2112,20 @@ async function syncMembersToSupabase(snapshot){
 async function cloudWrite(snapshot){
  if(!signedInAdmin)throw Error('Admin Login karein');
  const client=getSupabaseClient();
- // Keep the Admin Messenger directory in step with every full cloud save.
- // All other business records remain together in app_state.
- await syncMembersToSupabase(snapshot);
+ // Save the complete business ledger first. A secondary member-directory
+ // function outage must never block the master Cloud record.
  const {error}=await client.from('app_state').upsert({user_id:signedInAdmin.id,data:snapshot,updated_at:new Date().toISOString()},{onConflict:'user_id'});
  if(error)throw error;
+ try{
+  await syncMembersToSupabase(snapshot);
+  memberDirectorySyncPending=false;
+ }catch(directoryError){
+  memberDirectorySyncPending=true;
+  console.warn('Cloud ledger saved; member directory sync pending:',directoryError);
+ }
+ return !memberDirectorySyncPending;
 }
-function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>{lastCloudSnapshot=cloneCloudData(snapshot);setCloudNotice('<b>Cloud Sync chalu hai:</b> Naya hisaab Supabase mein save ho raha hai.',true)}).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
+function queueCloudSave(){const snapshot=JSON.parse(JSON.stringify(data));cloudSyncQueue=cloudSyncQueue.then(()=>cloudWrite(snapshot)).then(()=>{lastCloudSnapshot=cloneCloudData(snapshot);setCloudNotice(memberDirectorySyncPending?'<b>Hisaab Cloud mein save hai.</b> Member login directory ka sync pending hai; main investment aur ledger sync chalu hai.':'<b>Cloud Sync chalu hai:</b> Naya hisaab Cloud mein save ho gaya.',!memberDirectorySyncPending)}).catch(err=>{cloudSyncReady=false;console.error(err);setCloudNotice('<b>Cloud Sync ruk gaya:</b> '+esc(err.message||'Connection error')+'. Mobile ka data safe hai.');if(!cloudSyncErrorShown){cloudSyncErrorShown=true;alert('Data mobile mein save hai, lekin Cloud mein nahi pahucha. Mobile data safe hai.')}});return cloudSyncQueue}
 async function downloadLocalSafetyCopy(){
  const raw=localStorage.getItem(KEY);if(!raw)return 'missing';
  const filename='Apna-Sajhedari-Before-Cloud-Restore.json';
@@ -2164,8 +2172,8 @@ async function prepareCloudSync(button){
    cloudSyncReady=true;
    lastCloudSnapshot=cloneCloudData(data);
    startCloudWatch();
-   setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Is device ka hisaab Cloud mein save ho gaya. Doosre device ke updates bhi apne-aap aayenge.',true);
-   if(status)status.textContent='🟢 Cloud Sync chalu hai. Naya hisaab apne-aap save hoga.';
+   setCloudNotice(memberDirectorySyncPending?'<b>Hisaab Cloud mein save hai.</b> Member login directory sync pending hai.':'<b>Automatic Cloud Sync chalu hai:</b> Is device ka hisaab Cloud mein save ho gaya. Doosre device ke updates bhi apne-aap aayenge.',!memberDirectorySyncPending);
+   if(status)status.textContent=memberDirectorySyncPending?'Main hisaab Cloud mein save hai; member login directory sync pending hai.':'🟢 Cloud Sync chalu hai. Naya hisaab apne-aap save hoga.';
    return;
   }
   if(!row.data||typeof row.data!=='object'||Array.isArray(row.data))throw Error('Cloud data format sahi nahi. Local data ko nahi chhua.');
@@ -2193,8 +2201,8 @@ async function prepareCloudSync(button){
   cloudSyncReady=true;
   lastCloudSnapshot=cloneCloudData(data);
   startCloudWatch();
-  setCloudNotice('<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil gaya. Ab dono devices ke updates apne-aap aayenge.',true);
-  if(status)status.textContent='🟢 Cloud Sync chalu hai. Members list aur poora hisaab Cloud mein save hai.';
+  setCloudNotice(memberDirectorySyncPending?'<b>Hisaab Cloud mein save hai.</b> Member login directory ka sync pending hai; main hisaab surakshit hai.':'<b>Automatic Cloud Sync chalu hai:</b> Mobile aur Cloud ka hisaab mil gaya. Ab dono devices ke updates apne-aap aayenge.',!memberDirectorySyncPending);
+  if(status)status.textContent=memberDirectorySyncPending?'Main hisaab Cloud mein save hai; member login directory sync pending hai.':'🟢 Cloud Sync chalu hai. Members list aur poora hisaab Cloud mein save hai.';
  }catch(err){
   cloudSyncReady=false;console.error('Automatic Cloud Sync:',err);
   setCloudNotice('<b>Cloud Sync mein dikkat:</b> '+esc(err.message||'Connection error')+'. Local data safe hai.');
