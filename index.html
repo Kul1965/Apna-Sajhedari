@@ -2009,7 +2009,8 @@ function editTempoValue(){openModal('Tempo ki aaj ki keemat','<form onsubmit="sa
 function saveTempoValue(ev){ev.preventDefault();const v=Number(new FormData(ev.target).get('value'));if(!Number.isFinite(v)||v<0)return;data.tempo.assetValue=v;closeModal();save();showPage('tempo')}
 function printTempoReport(){const t=tempoTotals(),rows=data.tempo.entries.map(e=>'<tr><td>'+esc(e.date)+'</td><td>'+esc(e.note)+'</td><td>'+esc(e.category)+'</td><td>'+money(e.amount)+'</td></tr>').join(''),invest=data.tempo.investments.map(e=>'<tr><td>'+esc(e.memberName)+'</td><td>'+esc(e.date)+'</td><td>'+money(e.amount)+'</td></tr>').join('');printReportWindow('Tempo Business Report','<p>Investment '+money(t.capital)+' | Income '+money(t.income)+' | Expense '+money(t.expense)+' | Profit/Loss '+money(t.profit)+'</p><h2>Investors</h2><table><tr><th>Name</th><th>Date</th><th>Amount</th></tr>'+invest+'</table><h2>Daily entries</h2><table><tr><th>Date</th><th>Details</th><th>Type</th><th>Amount</th></tr>'+rows+'</table>')}
 
-render();
+showAppEntryScreen();
+try{render();}catch(startupRenderError){console.error('Dashboard startup render failed; login screen remains available.',startupRenderError);}
 if(dataLoadProblem){
   const root=document.getElementById('appRoot');
   if(root){
