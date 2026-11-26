@@ -60,9 +60,13 @@ create table if not exists public.food_payment_qrs (
   created_at timestamptz not null default now()
 );
 
-alter table public.food_orders
-  add constraint food_orders_payment_qr_fk
-  foreign key (payment_qr_id) references public.food_payment_qrs(id) on delete set null;
+do $ begin
+  if not exists (select 1 from pg_constraint where conname = 'food_orders_payment_qr_fk') then
+    alter table public.food_orders
+      add constraint food_orders_payment_qr_fk
+      foreign key (payment_qr_id) references public.food_payment_qrs(id) on delete set null;
+  end if;
+end $;
 
 create table if not exists public.food_payment_proofs (
   id uuid primary key default gen_random_uuid(),
