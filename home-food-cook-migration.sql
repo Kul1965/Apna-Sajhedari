@@ -27,3 +27,7 @@ using (public.is_food_cook() and status in ('pending','accepted','preparing'))
 with check (public.is_food_cook() and status in ('accepted','preparing','ready'));
 grant select on public.food_cooks to authenticated;
 grant update on public.food_orders to authenticated;
+
+drop policy if exists food_order_items_read on public.food_order_items;
+create policy food_order_items_read on public.food_order_items for select to authenticated
+using (public.is_food_admin() or public.is_food_cook() or exists (select 1 from public.food_orders o where o.id=order_id and o.customer_user_id=auth.uid()));
