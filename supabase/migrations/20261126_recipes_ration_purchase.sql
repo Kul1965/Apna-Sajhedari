@@ -46,3 +46,9 @@ drop policy if exists "food admins manage ration purchases" on public.ration_pur
 create policy "food admins manage ration purchases" on public.ration_purchases for all to authenticated
 using (exists(select 1 from public.food_admins a where a.user_id=auth.uid()))
 with check (exists(select 1 from public.food_admins a where a.user_id=auth.uid()));
+
+-- Explicit API privileges for the authenticated admin workspace.
+grant select, insert, update, delete on public.ration_items to authenticated;
+grant select, insert, update, delete on public.ration_purchases to authenticated;
+-- Refresh PostgREST's schema cache after the migration is applied.
+notify pgrst, 'reload schema';
