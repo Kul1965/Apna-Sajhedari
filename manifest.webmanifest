@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Apna Sajhedari",
-  "short_name": "Sajhedari",
-  "description": "Apna Sajhedari business and investment records",
+  "name": "Home Made Food",
+  "short_name": "Home Food",
+  "description": "Home Made Food ordering and delivery",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -11,14 +11,8 @@
   "theme_color": "#073d2d",
   "icons": [
     {
-      "src": "./icons/apna-sajhedari-apple-touch-icon.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icons/apna-sajhedari.svg",
-      "sizes": "192x192 512x512",
+      "src": "./icons/home-food.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
