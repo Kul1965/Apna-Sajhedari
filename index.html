@@ -290,9 +290,9 @@ function bindLoginNow(){
   const form=document.getElementById("authForm"),button=document.getElementById("authSubmit"),errorBox=document.getElementById("authError");
   if(!form||!button||form.dataset.bound==="yes")return;
   form.dataset.bound="yes";
-  form.addEventListener("submit",async function(event){
-    event.preventDefault();event.stopPropagation();
-    errorBox.textContent="";
+  button.type="button";
+  button.addEventListener("click",async function(){
+    errorBox.textContent="Sign-in button pressed. Connecting…";
     button.disabled=true;button.textContent="Signing in…";
     try{
       if(!window.supabase||!window.supabase.createClient)throw new Error("Supabase SDK load nahi hui. Internet connection check karein.");
@@ -302,8 +302,9 @@ function bindLoginNow(){
       const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
       if(error)throw error;
       if(!data.session)throw new Error("Session nahi bani. Supabase Auth user/settings check karein.");
+      errorBox.textContent="Login successful.";
       document.getElementById("authGate").classList.add("auth-hidden");
-    }catch(e){errorBox.textContent=String(e?.message||e);console.error("Login failed",e);}
+    }catch(e){errorBox.textContent="Login failed: "+String(e?.message||e);console.error("Login failed",e);}
     finally{button.disabled=false;button.textContent="Sign in";}
   });
 }
