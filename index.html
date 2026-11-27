@@ -247,7 +247,7 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 </style>
 </head>
 <body>
-<div id="authGate" class="auth-gate"><form id="authForm" class="auth-card"><h2>Apna-Sajhedari Login</h2><p>Supabase account ke email aur password se sign in karein.</p><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button id="authSubmit" type="submit">Sign in</button><p id="authError" class="auth-error" role="alert"></p></form></div>
+<div id="authGate" class="auth-gate"><form id="authForm" class="auth-card"><h2>Apna-Sajhedari Login</h2><p>Supabase account ke email aur password se sign in karein.</p><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button id="authSubmit" type="submit">Sign in</button><button id="authCreate" type="button">Create account / Set password</button><p id="authError" class="auth-error" role="alert"></p></form></div>
 <header class="app-header"><div class="head brand-banner"><div class="brand"><div class="mark">🍲</div><div><h1>BABITA FOOD CART 🛒</h1><small class="brand-tagline">हर स्वाद में अपनापन, हर निवाले में सेहत</small></div></div></div>
 <div class="head admin-strip"><div class="profile"><img id="adminPhoto" alt="Profile" src="" /><div><b id="adminName"><span class="role-label">ADMIN:</span> <span class="role-name">Not Set</span></b><small id="loginStatus">● Login status: Ready</small></div></div></div>
 <div class="head status-grid"><div class="status-box" id="clockBox">🕒 <span id="clock">--:--</span></div><div class="status-box">📅 <span id="today">--</span></div><div class="status-actions"><div class="status-box" id="cloudStatus">☁️ Cloud: Local</div><button class="status-box" id="logoutBtn" type="button">Sign out</button><button class="status-box" id="updateBtn" type="button">⟳ Update</button><div class="menu-wrap"><button class="status-box" id="menuToggle" type="button">☰ Menu ▾</button><div class="menu-dropdown hidden" id="menuDropdown"></div></div></div></div></header>
@@ -291,6 +291,20 @@ function bindLoginNow(){
   if(!form||!button||form.dataset.bound==="yes")return;
   form.dataset.bound="yes";
   button.type="button";
+  const createButton=document.getElementById("authCreate");
+  if(createButton)createButton.addEventListener("click",async()=>{
+    errorBox.textContent="Account create ho raha hai…";createButton.disabled=true;
+    try{
+      if(!window.supabase||!window.supabase.createClient)throw new Error("Supabase SDK load nahi hui. Internet check karein.");
+      if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+      const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;
+      if(!email||!password)throw new Error("Pehle email aur naya password bharein.");
+      const {data,error}=await supabaseClient.auth.signUp({email,password});
+      if(error)throw error;
+      errorBox.textContent=data.session?"Account ban gaya aur sign in ho gaye.":"Account request ho gayi. Email confirmation required ho sakti hai—Inbox check karein.";
+    }catch(e){errorBox.textContent="Account create nahi hua: "+String(e?.message||e);}
+    finally{createButton.disabled=false;}
+  });
   button.addEventListener("click",async function(){
     errorBox.textContent="Sign-in button pressed. Connecting…";
     button.disabled=true;button.textContent="Signing in…";
