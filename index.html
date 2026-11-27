@@ -295,6 +295,8 @@ async function connectSupabase(){
     status.title=String(err?.message||err);
     console.error("Supabase connection:",err);
   }
+
+connectSupabase();
 }
 
 const initialRecipes=[
