@@ -14,10 +14,26 @@ main{max-width:1180px;margin:24px auto;padding:0 16px}.tabs{display:flex;gap:8px
 label{display:block;font-size:13px;font-weight:700;margin:10px 0 5px}input,select,textarea{width:100%;padding:10px;border:1px solid #cddbd1;border-radius:9px;background:white;color:var(--ink);font:inherit}textarea{min-height:70px;resize:vertical}.row{display:flex;gap:10px;align-items:end}.row>*{flex:1}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}.stat{background:var(--mint);border-radius:12px;padding:13px}.stat b{display:block;font-size:22px;color:var(--green)}.stat span{font-size:12px;color:var(--muted)}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-size:12px}.status{display:inline-block;padding:4px 8px;border-radius:20px;background:#fff2d1;color:#805c08;font-size:12px;font-weight:800}.status.confirmed,.status.cooking,.status.completed{background:#e4f3e9;color:var(--green)}.status.cancelled{background:#fde8e6;color:#9b3028}.actions{display:flex;gap:6px;flex-wrap:wrap}.small{padding:7px 9px;font-size:12px}.danger{background:#a53a32!important}.notice{background:#fff8e7;border:1px solid #f0d99a;padding:11px;border-radius:10px;font-size:13px;margin:10px 0}.hidden{display:none}.empty{padding:24px;text-align:center;color:var(--muted)}footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 @media(max-width:760px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(3,1fr)}main{margin:16px auto}.panel{padding:14px}.head{align-items:flex-start}.role{font-size:12px}.brand h1{font-size:18px}table{min-width:580px}.table-wrap{overflow:auto}}
+
+/* Food Cart premium black-gold theme */
+:root{--green:#18c94b;--deep:#050505;--gold:#f5cc35;--mint:#101010;--ink:#f6f4ee;--muted:#c1bdb1;--line:#80691c;--bg:#000}
+body{background:#000;color:#f6f4ee}
+header{background:#030303;border-bottom:2px solid #d8b52b;box-shadow:0 5px 24px #d8b52b22;padding:14px 16px}
+.head{max-width:1180px}.brand{gap:12px}.mark{background:linear-gradient(145deg,#ffe66a,#b88a00);color:#090909;border:1px solid #fff0a0;box-shadow:0 0 18px #d9ad4544;border-radius:50%;width:46px;height:46px}
+.brand h1{color:#f8d94e;font-size:22px;font-weight:900}.brand small{color:#e6d9a0;font-size:13px}
+.role{background:#111;color:#f8d94e;border:1px solid #b99422}
+main{max-width:1180px;margin:22px auto}.tab{background:#090909;color:#f3d24a;border:1px solid #9d8125;border-radius:12px}.tab.active{background:linear-gradient(135deg,#f6dc55,#a67a00);color:#080808;border-color:#ffe87a;box-shadow:0 0 14px #d9ad4533}
+.panel{background:linear-gradient(145deg,#101010,#030303);border:1px solid #a98b24;border-radius:20px;box-shadow:0 0 0 1px #3e310c,0 8px 24px #000;padding:20px}.panel h2{color:#f5d44b}
+.food{background:linear-gradient(145deg,#121212,#050505);border:1px solid #8d741e;border-radius:16px;color:#f6f4ee}.food .price{color:#26e653}.food button,.primary{background:linear-gradient(135deg,#f5dc58,#a77c00);color:#080808;border:1px solid #ffe77b;box-shadow:0 3px 12px #d9ad4522}.food button:active,.primary:active{transform:translateY(1px)}
+input,select,textarea{background:#0b0b0b;color:#f5f2e9;border-color:#75601e}input:focus,select:focus,textarea:focus{outline:1px solid #f3d34a;border-color:#f3d34a}
+.stat{background:linear-gradient(145deg,#111,#030303);border:1px solid #8e741e;border-radius:14px}.stat b{color:#f5d44b}.stat span{color:#c8c1ac}
+table th{color:#e6cf72}th,td{border-bottom-color:#403615}.status{background:#352b0c;color:#f5d44b}.status.confirmed,.status.cooking,.status.completed{background:#12351a;color:#55ed72}.status.cancelled{background:#421815;color:#ff8a80}.notice{background:#211b08;border-color:#8c701c;color:#f3e4a7}
+footer{color:#b9a65d}
+@media(max-width:760px){header{padding:12px}.brand h1{font-size:19px}.brand small{font-size:11px}.panel{padding:14px}.tabs{gap:6px}.tab{padding:9px 11px}}
 </style>
 </head>
 <body>
-<header><div class="head"><div class="brand"><div class="mark">FC</div><div><h1>Food Cart</h1><small>Freshly prepared · Smart stock management</small></div></div><select class="role" id="role" aria-label="Dashboard"><option value="customer">Customer</option><option value="admin">Admin</option><option value="cook">Cook</option></select></div></header>
+<header><div class="head"><div class="brand"><div class="mark">🍲</div><div><h1>Food Cart</h1><small>कोशिश हमारी, आपकी सेहत का ख्याल रखने की — स्वादिष्ट बनाने की</small></div></div><select class="role" id="role" aria-label="Dashboard"><option value="customer">Customer</option><option value="admin">Admin</option><option value="cook">Cook</option></select></div></header>
 <main>
 <div class="tabs" id="tabs"><button class="tab active" data-view="order">Place Order</button><button class="tab" data-view="orders">Orders</button><button class="tab" data-view="recipes">Recipe & Stock</button></div>
 <section id="customerView">
@@ -28,7 +44,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;p
 <section id="cookView" class="hidden"><div class="panel"><h2>Cook · Kitchen queue</h2><p class="muted">Confirmed orders are shown individually. Starting cooking consumes the reserved stock.</p><div id="cookOrders"></div></div></section>
 <section id="ordersView" class="hidden"><div class="panel"><h2>Order history</h2><div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Dish</th><th>Servings</th><th>Status</th></tr></thead><tbody id="history"></tbody></table></div></div></section>
 <section id="recipesView" class="hidden"><div class="layout"><div class="panel"><h2>Recipe master</h2><div id="recipeList"></div></div><div class="panel"><h2>Store stock</h2><p class="muted">Adjust available quantities and current unit rates.</p><div id="stockEditor"></div></div></div></section>
-</main><footer>Food Cart · Orders and stock are saved in this browser for this demo.</footer>
+</main><footer>Food Cart · कोशिश हमारी, आपकी सेहत का ख्याल रखने की — स्वादिष्ट बनाने की</footer>
 <script>
 const initialRecipes=[
 {id:"r1",name:"Veg Pulao",base:2,price:95,ingredients:[["Rice",0.3,"kg"],["Mixed vegetables",0.25,"kg"],["Oil",0.04,"L"],["Spices",0.02,"kg"]],steps:"Wash rice. Cook vegetables and spices, add rice and water, then cook until done."},
