@@ -286,7 +286,7 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
-function showAuthGate(show){$("authGate").classList.toggle("auth-hidden",!show);document.querySelector("main").classList.toggle("auth-hidden",show);document.querySelector("header").classList.toggle("auth-hidden",show);document.querySelector("footer").classList.toggle("auth-hidden",show);}
+function showAuthGate(show){const gate=$("authGate");if(gate)gate.classList.toggle("auth-hidden",!show);["main","header","footer"].forEach(sel=>{const el=document.querySelector(sel);if(el)el.classList.toggle("auth-hidden",show);});}
 async function initSupabaseAuth(){
   try{
     if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK unavailable");
