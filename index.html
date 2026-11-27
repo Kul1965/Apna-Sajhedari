@@ -137,6 +137,12 @@ dialog::backdrop{background:#000b;backdrop-filter:blur(4px)}
 footer{color:#9cb9a5}
 @media(max-width:600px){header{padding:12px 14px}.head{gap:9px}.brand h1{font-size:clamp(20px,6vw,28px)}main{margin:14px auto;padding:0 10px}.tabs{gap:6px}.tab,button,.btn{min-height:40px}.panel,.card,.box,section{border-radius:14px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+/* Strong raised 3D depth, like the recipe-view card in the reference */
+button,.btn,.tab,.role,.status-box{box-shadow:0 5px 0 #064326,0 9px 0 #031b10,0 13px 20px #0009,inset 0 1px 0 #ffffff35!important;transform:translateY(0);position:relative}
+button.primary,.btn.primary,.tab.active,[aria-current="page"]{box-shadow:0 5px 0 #08703a,0 9px 0 #034322,0 14px 22px #0009,inset 0 1px 0 #ffffff9c!important}
+button:active,.btn:active,.tab:active{transform:translateY(5px)!important;box-shadow:0 1px 0 #064326,0 3px 5px #0008,inset 0 2px 4px #0003!important}
+section,.panel,.card,.box,.stat,.summary,.table-wrap,form,.content-card{box-shadow:0 7px 0 #123b28,0 12px 0 #061b11,0 18px 28px #0009,inset 0 1px 0 #ffffff12!important}
 </style>
 </head>
 <body>
