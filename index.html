@@ -242,12 +242,15 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 
 /* Admin messenger design preview */
 .messenger-layout{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1.5fr);gap:12px;margin-top:12px;color:#164b35}.messenger-people,.messenger-chat{border:1px solid #b9d9c4;border-radius:16px;background:linear-gradient(145deg,#f4fff7,#dcefe3);padding:12px;min-width:0}.messenger-people h3{margin:0 0 10px;color:#155b3d}.messenger-person{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 8px;border:1px solid #c4dfcc;border-radius:12px;background:#e9f8ed;color:#20583d;margin-bottom:8px}.messenger-person.active{background:#ccebd6;border-color:#5caa7b}.messenger-person small,.messenger-chat-head small,.messenger-bubble small{display:block;font-size:11px;opacity:.75;margin-top:4px}.messenger-avatar{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:50%;background:#c5e8d1;border:2px solid #d6b84b}.messenger-chat{display:flex;flex-direction:column;min-height:330px}.messenger-chat-head{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid #b7d5c1}.messenger-messages{display:flex;flex-direction:column;gap:12px;flex:1;padding:14px 0}.messenger-bubble{max-width:88%;padding:11px 13px;border-radius:14px;line-height:1.4}.messenger-bubble.incoming{align-self:flex-start;background:#e5f4e9;border:1px solid #bfdcc8}.messenger-bubble.outgoing{align-self:flex-end;background:#176947;color:#f2fff5;border:1px solid #64b58a}.messenger-compose{display:flex;gap:8px}.messenger-compose input{min-width:0;flex:1;border-radius:10px;padding:10px;border:1px solid #b9d9c4;background:#fff}.messenger-compose button{padding:10px 16px}@media(max-width:600px){.messenger-layout{grid-template-columns:1fr}.messenger-people{display:flex;flex-wrap:wrap;gap:6px}.messenger-people h3{width:100%}.messenger-person{width:auto;flex:1;min-width:135px;margin:0}.messenger-chat{min-height:300px}}
+
+.auth-gate{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:#000e}.auth-card{width:min(100%,420px);padding:24px;border:1px solid #168b3d;border-radius:18px;background:#090d0a;color:#f6f4ee;box-shadow:0 18px 60px #000}.auth-card h2{color:#9cffb7;margin-top:0}.auth-card label{display:block;margin:12px 0 5px}.auth-card input{width:100%;padding:12px;border:1px solid #176d36;border-radius:9px;background:#111;color:white}.auth-card button{margin-top:14px;width:100%;padding:12px;border:0;border-radius:9px;background:linear-gradient(135deg,#6cff94,#12a944);font-weight:800;color:#03150b}.auth-error{color:#ff9b91;min-height:1.4em;font-size:13px}.auth-hidden{display:none!important}
 </style>
 </head>
 <body>
+<div id="authGate" class="auth-gate"><form id="authForm" class="auth-card"><h2>Apna-Sajhedari Login</h2><p>Supabase account ke email aur password se sign in karein.</p><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button id="authSubmit" type="submit">Sign in</button><p id="authError" class="auth-error" role="alert"></p></form></div>
 <header class="app-header"><div class="head brand-banner"><div class="brand"><div class="mark">🍲</div><div><h1>BABITA FOOD CART 🛒</h1><small class="brand-tagline">हर स्वाद में अपनापन, हर निवाले में सेहत</small></div></div></div>
 <div class="head admin-strip"><div class="profile"><img id="adminPhoto" alt="Profile" src="" /><div><b id="adminName"><span class="role-label">ADMIN:</span> <span class="role-name">Not Set</span></b><small id="loginStatus">● Login status: Ready</small></div></div></div>
-<div class="head status-grid"><div class="status-box" id="clockBox">🕒 <span id="clock">--:--</span></div><div class="status-box">📅 <span id="today">--</span></div><div class="status-actions"><div class="status-box" id="cloudStatus">☁️ Cloud: Local</div><button class="status-box" id="updateBtn" type="button">⟳ Update</button><div class="menu-wrap"><button class="status-box" id="menuToggle" type="button">☰ Menu ▾</button><div class="menu-dropdown hidden" id="menuDropdown"></div></div></div></div></header>
+<div class="head status-grid"><div class="status-box" id="clockBox">🕒 <span id="clock">--:--</span></div><div class="status-box">📅 <span id="today">--</span></div><div class="status-actions"><div class="status-box" id="cloudStatus">☁️ Cloud: Local</div><button class="status-box" id="logoutBtn" type="button">Sign out</button><button class="status-box" id="updateBtn" type="button">⟳ Update</button><div class="menu-wrap"><button class="status-box" id="menuToggle" type="button">☰ Menu ▾</button><div class="menu-dropdown hidden" id="menuDropdown"></div></div></div></div></header>
 <main>
 <div class="tabs hidden" id="tabs"><button class="tab" data-view="dashboard" data-roles="customer">Dashboard</button><button class="tab" data-view="order" data-roles="customer,admin">Place Order</button><button class="tab" data-view="orders" data-roles="customer,admin">Orders</button><button class="tab" data-view="admin" data-roles="admin">Admin Dashboard</button><button class="tab" data-view="cook" data-roles="cook,admin">Cook Dashboard</button><button class="tab" data-view="recipes" data-roles="admin">Recipe & Stock</button><button class="tab" data-view="settings" data-roles="admin">Settings</button></div>
 <section id="dashboardView" class="hidden"><div class="panel"><h2>Customer Dashboard</h2><p class="muted">Welcome to Babita Food Cart. Your order overview and quick links.</p><div class="stats"><div class="stat"><b id="myOrderCount">0</b><span>My orders</span></div><div class="stat"><b id="myActiveCount">0</b><span>Active orders</span></div><div class="stat"><b id="myCompletedCount">0</b><span>Completed</span></div></div><div class="actions"><button class="primary" id="dashPlace">Place an order</button><button class="primary" id="dashOrders">View orders</button></div></div><div class="panel" style="margin-top:16px"><h2>Recent orders</h2><div id="customerRecent"></div></div></section>
@@ -279,24 +282,33 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 <section id="messengerView" class="hidden"><div class="panel messenger-preview"><h2>✉️ Messenger</h2><p class="muted" id="messengerIntro">Food Cart ke saath private conversation.</p><div class="messenger-layout"><aside class="messenger-people"><h3 id="messengerListTitle">Conversations</h3><div class="messenger-person active"><span class="messenger-avatar">🍲</span><span><b id="messengerContact">Babita Food Cart / Admin</b><small>Conversation</small></span></div></aside><div class="messenger-chat"><div class="messenger-chat-head"><span class="messenger-avatar">🍲</span><div><b id="messengerChatTitle">Babita Food Cart</b><small>Messenger preview · Supabase connection pending</small></div></div><div class="messenger-messages"><div class="messenger-bubble incoming">Namaste! Messenger ka design yahan hai. Real messages Supabase connect hone ke baad aayenge.<small>Preview</small></div></div><div class="messenger-compose"><input type="text" placeholder="Message likhein…" disabled aria-label="Message"><button class="primary" type="button" disabled>Send</button></div></div></div></div></section>
 <section id="settingsView" class="hidden"><div class="panel"><h2>Admin Profile & Settings</h2><p class="muted">Yahin se admin ka naam aur profile photo set karein.</p><label for="settingName">Admin name</label><input id="settingName" placeholder="Admin name"><label for="settingPhoto">Profile photo</label><input id="settingPhoto" type="file" accept="image/*"><button class="primary" id="saveSettings">Save settings</button><p class="muted">Profile details are saved on this device.</p></div></section><nav class="bottom-nav" id="bottomNav"></nav></main><footer>Food Cart · कोशिश हमारी, आपकी सेहत का ख्याल रखने की — स्वादिष्ट बनाने की</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>// Supabase connection check only; existing local app behavior is unchanged.
+<script>// Supabase Auth login and connection status.
 const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
+function showAuthGate(show){$("authGate").classList.toggle("auth-hidden",!show);document.querySelector("main").classList.toggle("auth-hidden",show);document.querySelector("header").classList.toggle("auth-hidden",show);document.querySelector("footer").classList.toggle("auth-hidden",show);}
+async function initSupabaseAuth(){
+  try{
+    if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK unavailable");
+    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+    const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;
+    showAuthGate(!data.session);
+    supabaseClient.auth.onAuthStateChange((_event,session)=>showAuthGate(!session));
+    $("authForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("authSubmit"),err=$("authError");b.disabled=true;b.textContent="Signing in…";err.textContent="";
+      const {error}=await supabaseClient.auth.signInWithPassword({email:$("authEmail").value.trim(),password:$("authPassword").value});
+      if(error)err.textContent=error.message;
+      b.disabled=false;b.textContent="Sign in";
+    });
+    $("logoutBtn").onclick=async()=>{const {error}=await supabaseClient.auth.signOut();if(error)alert(error.message);};
+    $("cloudStatus").textContent="☁️ Cloud: Auth ready";
+  }catch(e){showAuthGate(true);$("authError").textContent=String(e?.message||e);$("cloudStatus").textContent="☁️ Cloud: Offline";}
+}
 async function checkCloudConnection(){
   const status=$("cloudStatus");
-  try{
-    if(!window.supabase || typeof window.supabase.createClient!=="function") throw new Error("Supabase SDK unavailable");
-    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  try{if(!supabaseClient)throw new Error("Supabase client unavailable");
     const {error}=await supabaseClient.from("food_menu_items").select("id").limit(1);
-    if(error) throw error;
-    status.textContent="☁️ Cloud: Connected";
-    status.title="Supabase connection check passed";
-  }catch(e){
-    status.textContent="☁️ Cloud: Local";
-    status.title="Cloud check failed: "+String(e?.message||e);
-    console.warn("Supabase connection check failed",e);
-  }
+    if(error)throw error;status.textContent="☁️ Cloud: Connected";status.title="Supabase connection check passed";
+  }catch(e){status.textContent="☁️ Cloud: Auth OK / data sync pending";status.title=String(e?.message||e);console.warn("Supabase data connection check failed",e);}
 }
 
 const initialRecipes=[
@@ -372,7 +384,7 @@ const rationPanel=[...document.querySelectorAll("#recipesView .panel")].find(p=>
 $("menuToggle").onclick=e=>{e.stopPropagation();$("menuDropdown").classList.toggle("hidden")};$("menuDropdown").onclick=e=>e.stopPropagation();document.addEventListener("click",e=>{if(!$("menuDropdown").contains(e.target)&&e.target!==$("menuToggle"))$("menuDropdown").classList.add("hidden")});$("updateBtn").onclick=()=>{const b=$("updateBtn");if(b.disabled)return;b.disabled=true;b.innerHTML='<span class="is-updating">⟳</span> Updating…';b.setAttribute("aria-live","polite");setTimeout(()=>location.reload(),500)};function tick(){const d=new Date();$("clock").textContent=d.toLocaleTimeString();$("today").textContent=d.toLocaleDateString();}tick();setInterval(tick,1000);
 function loadProfile(){const n=localStorage.getItem("fc_admin_name")||"Not Set";$("adminName").innerHTML=(localStorage.getItem("fc_current_role")==="cook"?'<span class="role-label">COOK:</span> <span class="role-name">Kitchen Team</span>':'<span class="role-label">ADMIN:</span> <span class="role-name"></span>');if(localStorage.getItem("fc_current_role")!=="cook")$("adminName").querySelector(".role-name").textContent=n;$("settingName").value=n==="Not Set"?"":n;const p=localStorage.getItem("fc_admin_photo");if(p)$("adminPhoto").src=p;else $("adminPhoto").src="data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#b88b12"/><text x="40" y="49" font-size="25" text-anchor="middle" fill="#123">FC</text></svg>')}
 $("saveSettings").onclick=()=>{localStorage.setItem("fc_admin_name",$("settingName").value.trim()||"Not Set");const file=$("settingPhoto").files[0];if(file){const reader=new FileReader();reader.onload=()=>{localStorage.setItem("fc_admin_photo",reader.result);loadProfile()};reader.readAsDataURL(file)}else loadProfile();alert("Settings saved on this device.")};
-const savedRole=localStorage.getItem("fc_current_role");if(!["customer","admin","cook"].includes(savedRole))localStorage.setItem("fc_current_role","admin");buildNav();loadProfile();render();renderRationStore();checkCloudConnection();const savedView=localStorage.getItem("fc_current_view");const currentRole=localStorage.getItem("fc_current_role");const roleViews={customer:["dashboard","order","orders","messenger"],cook:["cook","recipes","rationStore","messenger"],admin:["order","orders","admin","cook","recipes","rationStore","settings","messenger"]};switchView(roleViews[currentRole].includes(savedView)?savedView:(currentRole==="admin"?"admin":currentRole==="cook"?"cook":"dashboard"));
+const savedRole=localStorage.getItem("fc_current_role");if(!["customer","admin","cook"].includes(savedRole))localStorage.setItem("fc_current_role","admin");buildNav();loadProfile();render();renderRationStore();initSupabaseAuth().then(checkCloudConnection);const savedView=localStorage.getItem("fc_current_view");const currentRole=localStorage.getItem("fc_current_role");const roleViews={customer:["dashboard","order","orders","messenger"],cook:["cook","recipes","rationStore","messenger"],admin:["order","orders","admin","cook","recipes","rationStore","settings","messenger"]};switchView(roleViews[currentRole].includes(savedView)?savedView:(currentRole==="admin"?"admin":currentRole==="cook"?"cook":"dashboard"));
 </script>
 </body>
 </html>
