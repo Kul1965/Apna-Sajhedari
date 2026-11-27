@@ -287,58 +287,45 @@ const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
 function bindLoginNow(){
-  const form=document.getElementById("authForm"),button=document.getElementById("authSubmit"),errorBox=document.getElementById("authError");
+  const form=$("authForm"),button=$("authSubmit"),errorBox=$("authError");
   if(!form||!button||form.dataset.bound==="yes")return;
   form.dataset.bound="yes";
-  button.type="button";
-  const createButton=document.getElementById("authCreate");
-  const resendButton=document.getElementById("authResend");
-  if(resendButton)resendButton.addEventListener("click",async()=>{
-    errorBox.textContent="Confirmation email dobara bhej rahe hain…";resendButton.disabled=true;
+  const createButton=$("authCreate"),resendButton=$("authResend");
+  async function ensureClient(){
+    if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK load nahi hui. Internet check karein.");
+    if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  }
+  form.addEventListener("submit",async function(ev){
+    ev.preventDefault();
+    errorBox.textContent="Sign in ho raha hai…";button.disabled=true;button.textContent="Signing in…";
     try{
-      if(!window.supabase||!window.supabase.createClient)throw new Error("Supabase SDK load nahi hui. Internet check karein.");
-      if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-      const email=document.getElementById("authEmail").value.trim();
-      if(!email)throw new Error("Email field mein apna email bharein.");
-      const {error}=await supabaseClient.auth.resend({type:"signup",email});
-      if(error)throw error;
-      errorBox.textContent="Resend request bhej di. Inbox aur Spam/Junk check karein.";
-    }catch(e){errorBox.textContent="Email resend nahi hua: "+String(e?.message||e);}
-    finally{resendButton.disabled=false;}
-  });
-  if(createButton)createButton.addEventListener("click",async()=>{
-    errorBox.textContent="Account create ho raha hai…";createButton.disabled=true;
-    try{
-      if(!window.supabase||!window.supabase.createClient)throw new Error("Supabase SDK load nahi hui. Internet check karein.");
-      if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-      const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;
-      if(!email||!password)throw new Error("Pehle email aur naya password bharein.");
-      const {data,error}=await supabaseClient.auth.signUp({email,password});
-      if(error)throw error;
-      errorBox.textContent=data.session?"Account ban gaya aur sign in ho gaye.":"Account request ho gayi. Email confirmation required ho sakti hai—Inbox check karein.";
-    }catch(e){errorBox.textContent="Account create nahi hua: "+String(e?.message||e);}
-    finally{createButton.disabled=false;}
-  });
-  button.addEventListener("click",async function(){
-    errorBox.textContent="Sign-in button pressed. Connecting…";
-    button.disabled=true;button.textContent="Signing in…";
-    try{
-      if(!window.supabase||!window.supabase.createClient)throw new Error("Supabase SDK load nahi hui. Internet connection check karein.");
-      if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-      const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;
+      await ensureClient();
+      const email=$("authEmail").value.trim(),password=$("authPassword").value;
       if(!email||!password)throw new Error("Email aur password dono bharein.");
       const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
       if(error)throw error;
-      if(!data.session)throw new Error("Session nahi bani. Supabase Auth user/settings check karein.");
+      if(!data.session)throw new Error("Session nahi bani. Dobara sign in karein.");
       errorBox.textContent="Login successful.";
-      document.getElementById("authGate").classList.add("auth-hidden");
+      showAuthGate(false);
+      checkCloudConnection();
     }catch(e){errorBox.textContent="Login failed: "+String(e?.message||e);console.error("Login failed",e);}
     finally{button.disabled=false;button.textContent="Sign in";}
   });
+  if(createButton)createButton.addEventListener("click",async()=>{
+    errorBox.textContent="Naya account create nahi kar rahe—existing account se sign in karein.";
+  });
+  if(resendButton)resendButton.addEventListener("click",async()=>{
+    errorBox.textContent="Aapka email pehle se confirmed hai. Resend ki zaroorat nahi; existing password se Sign in karein.";
+  });
 }
 bindLoginNow();
-function showAuthGate(show){const gate=$("authGate");if(gate)gate.classList.toggle("auth-hidden",!show);["main","header","footer"].forEach(sel=>{const el=document.querySelector(sel);if(el)el.classList.toggle("auth-hidden",show);});}
+function showAuthGate(show){
+  const gate=$("authGate");
+  if(gate)gate.classList.toggle("auth-hidden",!show);
+  ["main","header","footer"].forEach(sel=>{const el=document.querySelector(sel);if(el)el.classList.toggle("auth-hidden",show);});
+}
 async function initSupabaseAuth(){
+  showAuthGate(true);
   try{
     if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK unavailable");
     supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -346,14 +333,15 @@ async function initSupabaseAuth(){
     showAuthGate(!data.session);
     supabaseClient.auth.onAuthStateChange((_event,session)=>showAuthGate(!session));
     $("logoutBtn").onclick=async()=>{const {error}=await supabaseClient.auth.signOut();if(error)alert(error.message);};
-    $("cloudStatus").textContent="☁️ Cloud: Auth ready";
+    $("cloudStatus").textContent=data.session?"☁️ Cloud: Auth ready":"☁️ Cloud: Sign in required";
+    if(data.session)await checkCloudConnection();
   }catch(e){showAuthGate(true);$("authError").textContent=String(e?.message||e);$("cloudStatus").textContent="☁️ Cloud: Offline";}
 }
 async function checkCloudConnection(){
   const status=$("cloudStatus");
   try{if(!supabaseClient)throw new Error("Supabase client unavailable");
     const {error}=await supabaseClient.from("food_menu_items").select("id").limit(1);
-    if(error)throw error;status.textContent="☁️ Cloud: Connected";status.title="Supabase connection check passed";
+    if(error)throw error;status.textContent="☁️ Cloud: Connected";status.title="Supabase table access check passed";
   }catch(e){status.textContent="☁️ Cloud: Auth OK / data sync pending";status.title=String(e?.message||e);console.warn("Supabase data connection check failed",e);}
 }
 
