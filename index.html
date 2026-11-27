@@ -78,6 +78,20 @@ body[data-role="cook"] .status-actions{grid-template-columns:1fr}
 #recipesView button:active,.ingredient-line button:active{transform:translateY(3px);box-shadow:0 1px 0 #9ebdad!important}
 #draftIngredients{padding:6px!important}
 @media(max-width:390px){.ingredient-line{grid-template-columns:minmax(0,1fr) auto auto 28px;gap:4px;padding:6px;font-size:12px}.ingredient-remove{min-width:26px!important}}
+
+/* Recipe ingredient row: compact, store-linked units, premium dark 3D */
+#recipesView #recipeQty{width:100%;max-width:100%;}
+#recipesView #recipeUnitLabel{font-weight:800;color:var(--gold)}
+#recipesView #recipeRateHint{margin:4px 0 8px;font-size:12px;line-height:1.35;color:#8fc9a4}
+#recipesView .ingredient-line{grid-template-columns:minmax(0,1fr) auto auto 30px;gap:6px;padding:7px 8px;border:1px solid #705e27;border-radius:11px;background:linear-gradient(145deg,#17251c,#080c09);box-shadow:0 3px 0 #4e411d,0 6px 10px #0008;color:#e8f3e9;font-size:12px}
+#recipesView .ingredient-name{color:#a5f0b7}
+#recipesView .ingredient-qty{color:#e6d9a8}
+#recipesView .ingredient-cost{color:#9df5b0}
+#recipesView .ingredient-remove{min-width:27px!important;padding:3px 6px!important;border:1px solid #9b7b2d!important;background:linear-gradient(#254a34,#12301f)!important;color:#c7f4d0!important;box-shadow:0 3px 0 #09170e,0 4px 8px #0008!important}
+#recipesView #draftIngredients{border:1px solid #6b5721;border-radius:12px;background:#17140b;color:#e8dca8}
+#recipesView #addRecipeIngredient,#recipesView #saveRecipe,#recipesView #loadPremade,#recipesView #savePurchase{border:1px solid #5ee88d!important;background:linear-gradient(145deg,#42e879,#138b45)!important;color:#052313!important;box-shadow:0 4px 0 #07532b,0 7px 12px #00d45a30!important;font-weight:800}
+#recipesView button:active{transform:translateY(3px);box-shadow:0 1px 0 #07532b!important}
+@media(max-width:390px){#recipesView .ingredient-line{grid-template-columns:minmax(0,1fr) auto auto 26px;gap:4px;padding:6px;font-size:11px}}
 </style>
 </head>
 <body>
