@@ -287,10 +287,10 @@ const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
 function bindLoginNow(){
-  const form=$("authForm"),button=$("authSubmit"),errorBox=$("authError");
+  const form=document.getElementById("authForm"),button=document.getElementById("authSubmit"),errorBox=document.getElementById("authError");
   if(!form||!button||form.dataset.bound==="yes")return;
   form.dataset.bound="yes";
-  const createButton=$("authCreate"),resendButton=$("authResend");
+  const createButton=document.getElementById("authCreate"),resendButton=document.getElementById("authResend");
   async function ensureClient(){
     if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK load nahi hui. Internet check karein.");
     if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -300,7 +300,7 @@ function bindLoginNow(){
     errorBox.textContent="Sign in ho raha hai…";button.disabled=true;button.textContent="Signing in…";
     try{
       await ensureClient();
-      const email=$("authEmail").value.trim(),password=$("authPassword").value;
+      const email=document.getElementById("authEmail").value.trim(),password=document.getElementById("authPassword").value;
       if(!email||!password)throw new Error("Email aur password dono bharein.");
       const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
       if(error)throw error;
