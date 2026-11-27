@@ -281,7 +281,7 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
-async function connectSupabase(){
+async async function connectSupabase(){
   const status=$("cloudStatus");
   try{
     if(!window.supabase?.createClient) throw new Error("Supabase SDK did not load");
@@ -295,9 +295,8 @@ async function connectSupabase(){
     status.title=String(err?.message||err);
     console.error("Supabase connection:",err);
   }
-
-connectSupabase();
 }
+connectSupabase();
 
 const initialRecipes=[
 {id:"r1",name:"Veg Pulao",base:2,price:95,ingredients:[["Rice",0.3,"kg"],["Mixed vegetables",0.25,"kg"],["Oil",0.04,"L"],["Spices",0.02,"kg"]],steps:"Wash rice. Cook vegetables and spices, add rice and water, then cook until done."},
