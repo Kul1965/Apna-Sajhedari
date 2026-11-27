@@ -278,27 +278,32 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 </section>
 <section id="messengerView" class="hidden"><div class="panel messenger-preview"><h2>✉️ Messenger</h2><p class="muted" id="messengerIntro">Food Cart ke saath private conversation.</p><div class="messenger-layout"><aside class="messenger-people"><h3 id="messengerListTitle">Conversations</h3><div class="messenger-person active"><span class="messenger-avatar">🍲</span><span><b id="messengerContact">Babita Food Cart / Admin</b><small>Conversation</small></span></div></aside><div class="messenger-chat"><div class="messenger-chat-head"><span class="messenger-avatar">🍲</span><div><b id="messengerChatTitle">Babita Food Cart</b><small>Messenger preview · Supabase connection pending</small></div></div><div class="messenger-messages"><div class="messenger-bubble incoming">Namaste! Messenger ka design yahan hai. Real messages Supabase connect hone ke baad aayenge.<small>Preview</small></div></div><div class="messenger-compose"><input type="text" placeholder="Message likhein…" disabled aria-label="Message"><button class="primary" type="button" disabled>Send</button></div></div></div></div></section>
 <section id="settingsView" class="hidden"><div class="panel"><h2>Admin Profile & Settings</h2><p class="muted">Yahin se admin ka naam aur profile photo set karein.</p><label for="settingName">Admin name</label><input id="settingName" placeholder="Admin name"><label for="settingPhoto">Profile photo</label><input id="settingPhoto" type="file" accept="image/*"><button class="primary" id="saveSettings">Save settings</button><p class="muted">Profile details are saved on this device.</p></div></section><nav class="bottom-nav" id="bottomNav"></nav></main><footer>Food Cart · कोशिश हमारी, आपकी सेहत का ख्याल रखने की — स्वादिष्ट बनाने की</footer>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>// Supabase connection check only; existing local app behavior is unchanged.
+<script>
 const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
 async function checkCloudConnection(){
-  const status=$("cloudStatus");
-  try{
-    if(!window.supabase || typeof window.supabase.createClient!=="function") throw new Error("Supabase SDK unavailable");
-    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-    const {error}=await supabaseClient.from("food_menu_items").select("id").limit(1);
-    if(error) throw error;
-    status.textContent="☁️ Cloud: Connected";
-    status.title="Supabase connection check passed";
-  }catch(e){
-    status.textContent="☁️ Cloud: Local";
-    status.title="Cloud check failed: "+String(e?.message||e);
-    console.warn("Supabase connection check failed",e);
-  }
+ const status=$("cloudStatus");
+ status.textContent="☁️ Cloud: Checking…";
+ try{
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  const response=await fetch(SUPABASE_URL+"/rest/v1/food_menu_items?select=id&limit=1",{
+   method:"GET",
+   headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:"Bearer "+SUPABASE_PUBLISHABLE_KEY},
+   signal:controller.signal
+  });
+  clearTimeout(timer);
+  if(!response.ok)throw new Error("Supabase HTTP "+response.status);
+  status.textContent="☁️ Cloud: Connected";
+  status.title="Supabase REST connection check passed";
+ }catch(e){
+  status.textContent="☁️ Cloud: Local";
+  status.title="Cloud check failed: "+String(e?.message||e);
+  console.warn("Supabase connection check failed",e);
+ }
 }
-
+</script>
 const initialRecipes=[
 {id:"r1",name:"Veg Pulao",base:2,price:95,ingredients:[["Rice",0.3,"kg"],["Mixed vegetables",0.25,"kg"],["Oil",0.04,"L"],["Spices",0.02,"kg"]],steps:"Wash rice. Cook vegetables and spices, add rice and water, then cook until done."},
 {id:"r2",name:"Chole Rice",base:2,price:110,ingredients:[["Rice",0.3,"kg"],["Chickpeas",0.25,"kg"],["Onion",0.15,"kg"],["Oil",0.04,"L"],["Spices",0.025,"kg"]],steps:"Cook soaked chickpeas with spices. Prepare rice and serve together."},
