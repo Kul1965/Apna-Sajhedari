@@ -100,7 +100,7 @@ drop policy if exists "participants and food admins read messages" on public.foo
 create policy "participants and food admins read messages"
   on public.food_messages for select to authenticated
   using (
-    exists (select 1 from public.food_conversation_participants p where p.conversation_id = conversation_id and p.user_id = auth.uid())
+    exists (select 1 from public.food_conversation_participants p where p.conversation_id = food_conversation_participants.conversation_id and p.user_id = auth.uid())
     or exists (select 1 from public.food_admins a where a.user_id = auth.uid())
   );
 drop policy if exists "participants and food admins send messages" on public.food_messages;
@@ -109,7 +109,7 @@ create policy "participants and food admins send messages"
   with check (
     sender_id = auth.uid()
     and (
-      exists (select 1 from public.food_conversation_participants p where p.conversation_id = conversation_id and p.user_id = auth.uid())
+      exists (select 1 from public.food_conversation_participants p where p.conversation_id = food_conversation_participants.conversation_id and p.user_id = auth.uid())
       or exists (select 1 from public.food_admins a where a.user_id = auth.uid())
     )
   );
