@@ -293,7 +293,7 @@ function bindLoginNow(){
   const createButton=document.getElementById("authCreate"),resendButton=document.getElementById("authResend");
   async function ensureClient(){
     if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK load nahi hui. Internet check karein.");
-    if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+    if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
   }
   form.addEventListener("submit",async function(ev){
     ev.preventDefault();
@@ -328,7 +328,7 @@ async function initSupabaseAuth(){
   showAuthGate(true);
   try{
     if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK unavailable");
-    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
     const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;
     showAuthGate(!data.session);
     supabaseClient.auth.onAuthStateChange((_event,session)=>showAuthGate(!session));
