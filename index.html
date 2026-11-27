@@ -294,10 +294,22 @@ async function initSupabaseAuth(){
     const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;
     showAuthGate(!data.session);
     supabaseClient.auth.onAuthStateChange((_event,session)=>showAuthGate(!session));
-    $("authForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("authSubmit"),err=$("authError");b.disabled=true;b.textContent="Signing in…";err.textContent="";
-      const {error}=await supabaseClient.auth.signInWithPassword({email:$("authEmail").value.trim(),password:$("authPassword").value});
-      if(error)err.textContent=error.message;
-      b.disabled=false;b.textContent="Sign in";
+    $("authForm").addEventListener("submit",async e=>{
+      e.preventDefault();
+      const b=$("authSubmit"),err=$("authError");
+      err.textContent="";
+      b.disabled=true;b.textContent="Signing in…";
+      try{
+        const email=$("authEmail").value.trim(),password=$("authPassword").value;
+        if(!email||!password)throw new Error("Email aur password dono bharein.");
+        const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        if(!data.session)throw new Error("Login session nahi bani. Supabase Auth settings check karein.");
+      }catch(e){
+        err.textContent=String(e?.message||"Sign in nahi ho saka. Network aur Supabase Auth settings check karein.");
+      }finally{
+        b.disabled=false;b.textContent="Sign in";
+      }
     });
     $("logoutBtn").onclick=async()=>{const {error}=await supabaseClient.auth.signOut();if(error)alert(error.message);};
     $("cloudStatus").textContent="☁️ Cloud: Auth ready";
