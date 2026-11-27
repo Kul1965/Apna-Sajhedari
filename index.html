@@ -286,15 +286,17 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 const SUPABASE_URL="https://atnlyzitqolbtmsjnzlt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY="sb_publishable_U7wR3oHtnTJ2SRi5v9VwoA__qDv4-fu";
 let supabaseClient=null;
+function getSupabaseClient(){
+  if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK load nahi hui. Internet check karein.");
+  if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
+  return supabaseClient;
+}
 function bindLoginNow(){
   const form=document.getElementById("authForm"),button=document.getElementById("authSubmit"),errorBox=document.getElementById("authError");
   if(!form||!button||form.dataset.bound==="yes")return;
   form.dataset.bound="yes";
   const createButton=document.getElementById("authCreate"),resendButton=document.getElementById("authResend");
-  async function ensureClient(){
-    if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK load nahi hui. Internet check karein.");
-    if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
-  }
+  async function ensureClient(){getSupabaseClient();}
   form.addEventListener("submit",async function(ev){
     ev.preventDefault();
     errorBox.textContent="Sign in ho raha hai…";button.disabled=true;button.textContent="Signing in…";
@@ -327,8 +329,7 @@ function showAuthGate(show){
 async function initSupabaseAuth(){
   showAuthGate(true);
   try{
-    if(!window.supabase||typeof window.supabase.createClient!=="function")throw new Error("Supabase SDK unavailable");
-    supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
+    getSupabaseClient();
     const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;
     showAuthGate(!data.session);
     supabaseClient.auth.onAuthStateChange((_event,session)=>showAuthGate(!session));
