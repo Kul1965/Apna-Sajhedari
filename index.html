@@ -183,6 +183,16 @@ footer{color:#60786a!important}
 
 /* Only the page body background stays dark; cards and controls retain their previous theme. */
 body{background:radial-gradient(ellipse at top,#2b6848 0%,#1d5238 58%,#16432f 100%)!important}
+
+/* Admin summary cards: clearer text and compact visual icons */
+#adminView>.stats .stat{position:relative;min-height:118px;padding:16px 14px;background:linear-gradient(145deg,#f8fff9,#d9eee1)!important;color:#174b35!important;border:1px solid #b6d8c0!important;box-shadow:0 5px 0 #9fc5aa,0 8px 14px #174b2b24,inset 0 1px 0 #fff!important}
+#adminView>.stats .stat b{font-size:30px;line-height:1.15;color:#087b3c!important;margin:0 0 10px;font-weight:900}
+#adminView>.stats .stat span{display:block;color:#244d38!important;font-size:14px;line-height:1.35;font-weight:800;max-width:78%}
+#adminView>.stats .stat:after{position:absolute;right:12px;top:13px;font-size:25px;line-height:1;opacity:.9}
+#adminView>.stats .stat:nth-child(1):after{content:"🕒"}
+#adminView>.stats .stat:nth-child(2):after{content:"📦"}
+#adminView>.stats .stat:nth-child(3):after{content:"🥕"}
+@media(max-width:760px){#adminView>.stats{gap:8px}#adminView>.stats .stat{min-height:116px;padding:15px 12px}#adminView>.stats .stat b{font-size:29px}#adminView>.stats .stat span{font-size:13px;max-width:100%}#adminView>.stats .stat:after{right:10px;top:12px;font-size:22px}}
 </style>
 </head>
 <body>
