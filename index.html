@@ -92,6 +92,11 @@ body[data-role="cook"] .status-actions{grid-template-columns:1fr}
 #recipesView #addRecipeIngredient,#recipesView #saveRecipe,#recipesView #loadPremade,#recipesView #savePurchase{border:1px solid #5ee88d!important;background:linear-gradient(145deg,#42e879,#138b45)!important;color:#052313!important;box-shadow:0 4px 0 #07532b,0 7px 12px #00d45a30!important;font-weight:800}
 #recipesView button:active{transform:translateY(3px);box-shadow:0 1px 0 #07532b!important}
 @media(max-width:390px){#recipesView .ingredient-line{grid-template-columns:minmax(0,1fr) auto auto 26px;gap:4px;padding:6px;font-size:11px}}
+
+/* Matching compact 3D remove control beside each ingredient */
+#recipesView .ingredient-line .ingredient-remove{width:30px!important;min-width:30px!important;height:32px!important;padding:0!important;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c8a64a!important;border-radius:9px!important;background:linear-gradient(145deg,#f7fff9,#cce8d5)!important;color:#17583a!important;font-size:20px!important;font-weight:900!important;box-shadow:0 3px 0 #759b81,0 5px 8px #0002!important}
+#recipesView .ingredient-line .ingredient-remove:active{transform:translateY(3px);box-shadow:0 0 0 #759b81!important}
+#recipesView #addRecipeIngredient{padding:9px 14px!important;border-radius:10px!important;box-shadow:0 4px 0 #08713a,0 7px 10px #0003!important}
 </style>
 </head>
 <body>
