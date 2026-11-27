@@ -247,7 +247,7 @@ body[data-role="customer"] .status-actions .status-box{white-space:nowrap;justif
 </style>
 </head>
 <body>
-<div id="authGate" class="auth-gate"><form id="authForm" class="auth-card"><h2>Apna-Sajhedari Login</h2><p>Supabase account ke email aur password se sign in karein.</p><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button id="authSubmit" type="submit">Sign in</button><button id="authCreate" type="button">Create account / Set password</button><p id="authError" class="auth-error" role="alert"></p></form></div>
+<div id="authGate" class="auth-gate"><form id="authForm" class="auth-card"><h2>Apna-Sajhedari Login</h2><p>Supabase account ke email aur password se sign in karein.</p><label for="authEmail">Email</label><input id="authEmail" type="email" autocomplete="username" required><label for="authPassword">Password</label><input id="authPassword" type="password" autocomplete="current-password" required><button id="authSubmit" type="submit">Sign in</button><button id="authCreate" type="button">Create account / Set password</button><button id="authResend" type="button">Resend confirmation email</button><p id="authError" class="auth-error" role="alert"></p></form></div>
 <header class="app-header"><div class="head brand-banner"><div class="brand"><div class="mark">🍲</div><div><h1>BABITA FOOD CART 🛒</h1><small class="brand-tagline">हर स्वाद में अपनापन, हर निवाले में सेहत</small></div></div></div>
 <div class="head admin-strip"><div class="profile"><img id="adminPhoto" alt="Profile" src="" /><div><b id="adminName"><span class="role-label">ADMIN:</span> <span class="role-name">Not Set</span></b><small id="loginStatus">● Login status: Ready</small></div></div></div>
 <div class="head status-grid"><div class="status-box" id="clockBox">🕒 <span id="clock">--:--</span></div><div class="status-box">📅 <span id="today">--</span></div><div class="status-actions"><div class="status-box" id="cloudStatus">☁️ Cloud: Local</div><button class="status-box" id="logoutBtn" type="button">Sign out</button><button class="status-box" id="updateBtn" type="button">⟳ Update</button><div class="menu-wrap"><button class="status-box" id="menuToggle" type="button">☰ Menu ▾</button><div class="menu-dropdown hidden" id="menuDropdown"></div></div></div></div></header>
@@ -292,6 +292,20 @@ function bindLoginNow(){
   form.dataset.bound="yes";
   button.type="button";
   const createButton=document.getElementById("authCreate");
+  const resendButton=document.getElementById("authResend");
+  if(resendButton)resendButton.addEventListener("click",async()=>{
+    errorBox.textContent="Confirmation email dobara bhej rahe hain…";resendButton.disabled=true;
+    try{
+      if(!window.supabase||!window.supabase.createClient)throw new Error("Supabase SDK load nahi hui. Internet check karein.");
+      if(!supabaseClient)supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+      const email=document.getElementById("authEmail").value.trim();
+      if(!email)throw new Error("Email field mein apna email bharein.");
+      const {error}=await supabaseClient.auth.resend({type:"signup",email});
+      if(error)throw error;
+      errorBox.textContent="Resend request bhej di. Inbox aur Spam/Junk check karein.";
+    }catch(e){errorBox.textContent="Email resend nahi hua: "+String(e?.message||e);}
+    finally{resendButton.disabled=false;}
+  });
   if(createButton)createButton.addEventListener("click",async()=>{
     errorBox.textContent="Account create ho raha hai…";createButton.disabled=true;
     try{
